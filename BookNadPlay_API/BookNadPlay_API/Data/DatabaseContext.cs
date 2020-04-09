@@ -1,16 +1,15 @@
-﻿using System;
+﻿using BookAndPlay_API.Models;
+using Microsoft.EntityFrameworkCore;
+using System;
 using System.Collections.Generic;
-//using System.Data.Entity;
 using System.Linq;
 using System.Threading.Tasks;
-using BookAndPlay_API.Models;
-using Microsoft.EntityFrameworkCore;
 
-namespace BookNadPlay_API.Data
+namespace BookNadPlay_API
 {
-    public class DataContext : DbContext
+    public class DatabaseContext : DbContext
     {
-        public DataContext (DbContextOptions<DataContext> options)
+        public DatabaseContext(DbContextOptions<DatabaseContext> options)
             : base(options)
         {
         }
@@ -21,10 +20,5 @@ namespace BookNadPlay_API.Data
         public DbSet<Facility> Facilities { get; set; }
         public DbSet<Sport> Sports { get; set; }
         public DbSet<City> Cities { get; set; }
-
-        //protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-        //{
-
-        //}
     }
 }

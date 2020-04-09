@@ -6,7 +6,7 @@ using System.Security.Claims;
 using System.Text;
 using System.Threading.Tasks;
 using BookAndPlay_API.Models;
-using BookNadPlay_API.Data;
+using BookNadPlay_API;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -21,9 +21,9 @@ namespace BookNadPlay_API.Controllers
     public class UserController : ControllerBase
     {
         public IConfiguration configuration;
-        private readonly DataContext context;
+        private readonly DatabaseContext context;
 
-        public UserController(IConfiguration config, DataContext context)
+        public UserController(IConfiguration config, DatabaseContext context)
         {
             this.configuration = config;
             this.context = context;

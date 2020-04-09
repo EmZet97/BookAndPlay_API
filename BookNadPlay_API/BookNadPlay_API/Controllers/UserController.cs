@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
+using System.Net;
+using System.Net.Http;
 using System.Security.Claims;
 using System.Text;
 using System.Threading.Tasks;
@@ -80,10 +82,21 @@ namespace BookNadPlay_API.Controllers
         [Route("Add")]
         public async Task<IActionResult> AddUser([FromBody] User user)
         {
+            
             if (!ModelState.IsValid)
             {
-                return BadRequest(ModelState);
+                return BadRequest("siema");
             }
+
+            var _user = await context.Users.FirstOrDefaultAsync(u => u.Email.ToLower() == user.Email.ToLower());
+            if (_user != null)
+            {
+                var response = new HttpResponseMessage(HttpStatusCode.NotAcceptable);                
+                response.Content = new StringContent("Email already in use!");
+
+                
+                return BadRequest("Email already in use!");
+            }              
 
             context.Users.Add(user);
             await context.SaveChangesAsync();
@@ -91,8 +104,9 @@ namespace BookNadPlay_API.Controllers
             return Ok(user);
         }
 
-        // ADD USER
+        // DELETE USER
         // POST: api/Users/Delete
+        [Authorize]
         [HttpDelete]
         [Route("Delete")]
         public async Task<IActionResult> DeleteUser()
@@ -128,24 +142,13 @@ namespace BookNadPlay_API.Controllers
             return await context.Users.FirstOrDefaultAsync(u => u.UserId == id);
         }
 
-        [HttpGet]
-        [Route("GetAll")]
-        public IEnumerable<User> GetAllUser()
+        // CHECK IF EMAIL IS IN USE
+        // POST: api/Users/Email/Check
+        [HttpPost]
+        [Route("Email/Check")]
+        public async Task<IActionResult> CheckIfUserEmailExists([FromBody] User user)
         {
-            //Get user id from token
-            //var idClaim = User.Claims.FirstOrDefault(x => x.Type.ToString().Equals("Id"));
-            //int id = int.Parse(idClaim.Value);
-
-            return context.Users;
-        }
-
-        //
-        // GET: api/Users/Check
-        [HttpGet]
-        [Route("Check")]
-        public async Task<IActionResult> CheckIfUserExists([FromBody] string email)
-        {
-            var _user = await context.Users.FirstOrDefaultAsync(u => u.Email.Equals(email, StringComparison.OrdinalIgnoreCase));
+            var _user = await context.Users.FirstOrDefaultAsync(u => u.Email.ToLower() == user.Email.ToLower());
 
             if (_user == null)
             {

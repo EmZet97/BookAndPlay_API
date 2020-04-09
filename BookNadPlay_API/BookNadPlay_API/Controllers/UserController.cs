@@ -77,7 +77,7 @@ namespace BookNadPlay_API.Controllers
         }
 
         // ADD USER
-        // POST: api/Users/Add
+        // POST: api/User/Add
         [HttpPost]
         [Route("Add")]
         public async Task<IActionResult> AddUser([FromBody] User user)
@@ -85,7 +85,7 @@ namespace BookNadPlay_API.Controllers
             
             if (!ModelState.IsValid)
             {
-                return BadRequest("siema");
+                return Unauthorized();
             }
 
             var _user = await context.Users.FirstOrDefaultAsync(u => u.Email.ToLower() == user.Email.ToLower());
@@ -105,7 +105,7 @@ namespace BookNadPlay_API.Controllers
         }
 
         // DELETE USER
-        // POST: api/Users/Delete
+        // POST: api/User/Delete
         [Authorize]
         [HttpDelete]
         [Route("Delete")]
@@ -124,8 +124,8 @@ namespace BookNadPlay_API.Controllers
                 return Ok("User succesfully deleted");
             }
 
-            return BadRequest();
-            
+            return Unauthorized();
+
         }
 
         // GET USER FROM TOKEN
@@ -143,7 +143,7 @@ namespace BookNadPlay_API.Controllers
         }
 
         // CHECK IF EMAIL IS IN USE
-        // POST: api/Users/Email/Check
+        // POST: api/User/Email/Check
         [HttpPost]
         [Route("Email/Check")]
         public async Task<IActionResult> CheckIfUserEmailExists([FromBody] User user)
@@ -154,6 +154,8 @@ namespace BookNadPlay_API.Controllers
             {
                 return NotFound();
             }
+
+            
 
             return Ok();
         }

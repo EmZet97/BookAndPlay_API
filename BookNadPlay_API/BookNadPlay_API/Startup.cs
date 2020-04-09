@@ -47,6 +47,12 @@ namespace BookNadPlay_API
                     ValidIssuer = Configuration["Jwt:Issuer"],
                     IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(Configuration["Jwt:Key"]))
                 };
+
+                services.AddCors(c =>
+                {
+                    c.AddPolicy("AllowOrigin", options => options.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod());
+                });
+
             });
         
         }
@@ -57,9 +63,13 @@ namespace BookNadPlay_API
             if (env.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();
-            }
+            }            
 
             app.UseRouting();
+
+            // Use the CORS policy
+            app.UseCors(options => options.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod());
+            //app.UseCors();
 
             app.UseAuthentication();
 

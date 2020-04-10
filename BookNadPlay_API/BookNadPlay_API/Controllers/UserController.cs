@@ -9,6 +9,7 @@ using System.Text;
 using System.Threading.Tasks;
 using BookAndPlay_API.Models;
 using BookNadPlay_API;
+using BookNadPlay_API.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -36,7 +37,7 @@ namespace BookNadPlay_API.Controllers
         // POST: api/User/Auth
         [HttpPost]
         [Route("Auth")]
-        public async Task<IActionResult> AuthorizeUser([FromBody] User user)
+        public async Task<IActionResult> AuthorizeUser([FromBody] AuthModel user)
         {
             if (user != null)
             {
@@ -60,7 +61,7 @@ namespace BookNadPlay_API.Controllers
 
                     var signIn = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
-                    var token = new JwtSecurityToken(configuration["Jwt:Issuer"], configuration["Jwt:Audience"], claims, expires: DateTime.UtcNow.AddDays(1), signingCredentials: signIn);
+                    var token = new JwtSecurityToken(configuration["Jwt:Issuer"], configuration["Jwt:Audience"], claims, expires: DateTime.UtcNow.AddHours(1), signingCredentials: signIn);
 
                     //Return token
                     return Ok(new JwtSecurityTokenHandler().WriteToken(token));
@@ -114,6 +115,8 @@ namespace BookNadPlay_API.Controllers
             //Get user id from token
             var idClaim = User.Claims.FirstOrDefault(x => x.Type.ToString().Equals("Id"));
             int id = int.Parse(idClaim.Value);
+
+            
 
             var user = await context.Users.FirstOrDefaultAsync(u => u.UserId == id);
             if(user!= null)

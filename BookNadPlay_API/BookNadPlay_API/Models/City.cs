@@ -10,6 +10,8 @@ namespace BookAndPlay_API.Models
     {
         [Key]
         public int CityId { get; set; }
+
+        [MinLength(3, ErrorMessage = "City name require at least 3 characters")]
         public string Name { get; set; }
 
         public virtual IEnumerable<Facility> Facilities { get; set; }

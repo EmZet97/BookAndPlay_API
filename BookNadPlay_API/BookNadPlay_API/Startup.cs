@@ -67,9 +67,8 @@ namespace BookNadPlay_API
 
             app.UseRouting();
 
-            // Use the CORS policy
+            // Use the CORS policy, allow all
             app.UseCors(options => options.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod());
-            //app.UseCors();
 
             app.UseAuthentication();
 

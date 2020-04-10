@@ -115,7 +115,6 @@ namespace BookNadPlay_API.Controllers
             //Get user id from token
             var idClaim = User.Claims.FirstOrDefault(x => x.Type.ToString().Equals("Id"));
             int id = int.Parse(idClaim.Value);
-
             
 
             var user = await context.Users.FirstOrDefaultAsync(u => u.UserId == id);

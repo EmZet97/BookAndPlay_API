@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
+using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 
 namespace BookAndPlay_API.Models
@@ -16,6 +17,7 @@ namespace BookAndPlay_API.Models
 
         public DayOfWeek DayOfWeek { get; set; }
 
+        [JsonIgnore]
         public virtual Facility Facility { get; set; }
 
     }

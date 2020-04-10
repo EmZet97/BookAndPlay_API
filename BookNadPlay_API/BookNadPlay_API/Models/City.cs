@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
+using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 
 namespace BookAndPlay_API.Models
@@ -14,6 +15,7 @@ namespace BookAndPlay_API.Models
         [MinLength(3, ErrorMessage = "City name require at least 3 characters")]
         public string Name { get; set; }
 
+        [JsonIgnore]
         public virtual IEnumerable<Facility> Facilities { get; set; }
     }
 }

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
+using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 
 namespace BookAndPlay_API.Models
@@ -29,6 +30,7 @@ namespace BookAndPlay_API.Models
 
         public virtual User Owner { get; set; }
 
+        [JsonIgnore]
         public virtual IEnumerable<AccessPeriod> AccessPeriods { get; set; }
 
 

@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
+using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 
 namespace BookAndPlay_API.Models
@@ -33,8 +34,10 @@ namespace BookAndPlay_API.Models
         [DataType(DataType.PhoneNumber)]
         public string PhoneNumber { get; set; }
 
+        [JsonIgnore]
         public virtual IEnumerable<Facility> Facilities { get; set; }
 
+        [JsonIgnore]
         public virtual IEnumerable<Reservation> Reservations { get; set; }
     }
 }

@@ -13,6 +13,7 @@ namespace BookAndPlay_API.Models
         public int SportId { get; set; }
         public string Name { get; set; }
 
+        [JsonIgnore]
         public virtual IEnumerable<Facility> Facilities { get; set; }
 
     }

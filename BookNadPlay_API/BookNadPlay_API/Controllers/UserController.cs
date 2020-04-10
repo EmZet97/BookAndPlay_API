@@ -37,7 +37,7 @@ namespace BookNadPlay_API.Controllers
         // POST: api/User/Auth
         [HttpPost]
         [Route("Auth")]
-        public async Task<IActionResult> AuthorizeUser([FromBody] AuthModel user)
+        public async Task<IActionResult> AuthorizeUser(AuthModel user)
         {
             if (user != null)
             {
@@ -63,8 +63,11 @@ namespace BookNadPlay_API.Controllers
 
                     var token = new JwtSecurityToken(configuration["Jwt:Issuer"], configuration["Jwt:Audience"], claims, expires: DateTime.UtcNow.AddHours(1), signingCredentials: signIn);
 
-                    //Return token
-                    return Ok(new JwtSecurityTokenHandler().WriteToken(token));
+                    string gen_token = new JwtSecurityTokenHandler().WriteToken(token);
+                    
+                    var token_model = new TokenModel() { Token = gen_token };
+
+                    return Ok(token_model);
                 }
                 else
                 {

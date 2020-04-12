@@ -7,8 +7,18 @@ using System.Threading.Tasks;
 
 namespace BookAndPlay_API.Models
 {
+    public enum UserRoles
+    {
+        Admin = 0, Moder = 1, Normal = 2, Guest = 3
+    }
     public class User
     {
+        public User()
+        {
+            RoleId = (int)UserRoles.Normal;
+            RoleName = UserRoles.Normal.ToString();
+        }
+
         [Key]
         public int UserId { get; set; }
 
@@ -33,6 +43,9 @@ namespace BookAndPlay_API.Models
 
         [DataType(DataType.PhoneNumber)]
         public string PhoneNumber { get; set; }
+
+        public int RoleId { get; set; }
+        public string RoleName { get; set; }
 
         [JsonIgnore]
         public virtual IEnumerable<Facility> Facilities { get; set; }

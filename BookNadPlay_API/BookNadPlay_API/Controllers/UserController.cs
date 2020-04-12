@@ -42,15 +42,17 @@ namespace BookNadPlay_API.Controllers
             if (user != null)
             {
                 var _user = await context.Users.FirstOrDefaultAsync(u => u.Email == user.Email && u.Password == user.Password);
-
+                
                 if (_user != null)
                 {
+                    UserRoles role = (UserRoles)_user.RoleId;
+
                     //create claims details based on the user information
                     var claims = new[] {
                     new Claim(JwtRegisteredClaimNames.Sub, configuration["Jwt:Subject"]),
                     new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
                     new Claim(JwtRegisteredClaimNames.Iat, DateTime.UtcNow.ToString()),
-                    new Claim("Role", "User"),
+                    new Claim("Role", role.ToString()),
                     new Claim("Id", _user.UserId.ToString()),
                     new Claim("Name", _user.Name),
                     new Claim("Surname", _user.Surname),
@@ -94,13 +96,12 @@ namespace BookNadPlay_API.Controllers
 
             var _user = await context.Users.FirstOrDefaultAsync(u => u.Email.ToLower() == user.Email.ToLower());
             if (_user != null)
-            {
-                var response = new HttpResponseMessage(HttpStatusCode.NotAcceptable);                
-                response.Content = new StringContent("Email already in use!");
-
-                
+            {                
                 return BadRequest("Email already in use!");
-            }              
+            }
+
+            user.RoleId = (int)UserRoles.Normal;
+            user.RoleName = UserRoles.Normal.ToString();
 
             context.Users.Add(user);
             await context.SaveChangesAsync();
@@ -108,11 +109,11 @@ namespace BookNadPlay_API.Controllers
             return Ok(user);
         }
 
-        // DELETE USER
-        // POST: api/User/Delete
+        // DELETE LOGGED USER
+        // DELETE: api/User/SelfDelete
         [Authorize]
         [HttpDelete]
-        [Route("Delete")]
+        [Route("SelfDelete")]
         public async Task<IActionResult> DeleteUser()
         {
             //Get user id from token
@@ -133,6 +134,106 @@ namespace BookNadPlay_API.Controllers
 
         }
 
+        // DELETE USER
+        // DELETE: api/User/Delete
+        [Authorize]
+        [HttpDelete("Delete/{id}")]
+        public async Task<IActionResult> DeleteOtherUser(int id)
+        {
+            //Get user id from token
+            var idClaim = User.Claims.FirstOrDefault(x => x.Type.ToString().Equals("Id"));
+            int _id = int.Parse(idClaim.Value);
+
+
+            var user = await context.Users.FirstOrDefaultAsync(u => u.UserId == _id);
+            if (user != null)
+            {
+                if((UserRoles)user.RoleId == UserRoles.Admin)
+                {
+                    var _user = await context.Users.FirstOrDefaultAsync(u => u.UserId == id);
+                    if(_user != null && (UserRoles)_user.RoleId != UserRoles.Admin)
+                    {
+                        context.Users.Remove(_user);
+                        await context.SaveChangesAsync();
+
+                        return Ok("User succesfully deleted");
+                    }
+                    return BadRequest("Incorrect user Id or user is Admin");
+                }
+                return BadRequest("No permission to user deletion");
+            }
+
+            return Unauthorized();
+
+        }
+
+        // EDIT LOGGED USER
+        // POST: api/User/SelfEdit
+        [Authorize]
+        [HttpPost]
+        [Route("SelfEdit")]
+        public async Task<IActionResult> EditUser([FromBody] User_UpdateModel new_data)
+        {
+            //Get user id from token
+            var idClaim = User.Claims.FirstOrDefault(x => x.Type.ToString().Equals("Id"));
+            int id = int.Parse(idClaim.Value);
+
+            var user = await context.Users.FirstOrDefaultAsync(u => u.UserId == id);
+            if (user != null)
+            {
+                user.Email = new_data.Email ?? user.Email;
+                user.Name = new_data.Name ?? user.Name;
+                user.Surname = new_data.Surname ?? user.Surname;
+                user.PhoneNumber = new_data.PhoneNumber ?? user.PhoneNumber;
+                user.Password = new_data.Password ?? user.Password;
+
+                await context.SaveChangesAsync();
+
+                return Ok("User succesfully edited");
+            }
+
+            return Unauthorized();
+
+        }
+
+        // Update USER
+        // POST: api/User/Edit
+        [Authorize]
+        [HttpPost("Edit/{id}")]
+        public async Task<IActionResult> EditOtherUser(int id, [FromBody] User_UpdateModel new_data)
+        {
+            //Get user id from token
+            var idClaim = User.Claims.FirstOrDefault(x => x.Type.ToString().Equals("Id"));
+            int _id = int.Parse(idClaim.Value);
+
+            var user = await context.Users.FirstOrDefaultAsync(u => u.UserId == _id);
+            if (user != null)
+            {
+                if ((UserRoles)user.RoleId == UserRoles.Admin)
+                {
+                    var _user = await context.Users.FirstOrDefaultAsync(u => u.UserId == id);
+                    if (_user != null && (UserRoles)_user.RoleId != UserRoles.Admin)
+                    {
+                        _user.Email = new_data.Email ?? _user.Email;
+                        _user.Name = new_data.Name ?? _user.Name;
+                        _user.Surname = new_data.Surname ?? _user.Surname;
+                        _user.PhoneNumber = new_data.PhoneNumber ?? _user.PhoneNumber;
+                        _user.Password = new_data.Password ?? _user.Password;
+
+
+                        await context.SaveChangesAsync();
+
+                        return Ok("User succesfully edited");
+                    }
+                    return BadRequest("Incorrect user Id or user is Admin");
+                }
+                return BadRequest("No permission to user edition");
+            }
+
+            return Unauthorized();
+
+        }
+
         // GET USER FROM TOKEN
         // GET: api/User/Get
         [Authorize]
@@ -147,6 +248,28 @@ namespace BookNadPlay_API.Controllers
             return await context.Users.FirstOrDefaultAsync(u => u.UserId == id);
         }
 
+        // GET ALL USERS
+        // GET: api/User/GetAll
+        [Authorize]
+        [HttpGet]
+        [Route("GetAll")]
+        public async Task<IActionResult> GetUsers()
+        {
+            var idClaim = User.Claims.FirstOrDefault(x => x.Type.ToString().Equals("Id"));
+            int id = int.Parse(idClaim.Value);
+
+            var user = context.Users.Where(u => u.UserId == id).FirstOrDefault();
+            if(user != null)
+            {
+                if((UserRoles)user.RoleId == UserRoles.Admin)
+                {
+                    return Ok(context.Users.Where(u => u.RoleId != (int)UserRoles.Admin));
+                }
+            }
+
+            return Unauthorized();
+        }
+
         // CHECK IF EMAIL IS IN USE
         // POST: api/User/Email/Check
         [HttpPost]
@@ -158,9 +281,7 @@ namespace BookNadPlay_API.Controllers
             if (_user == null)
             {
                 return NotFound();
-            }
-
-            
+            }            
 
             return Ok();
         }

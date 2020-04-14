@@ -234,6 +234,106 @@ namespace BookNadPlay_API.Controllers
 
         }
 
+
+        // Promote user to admin
+        // POST: api/User/MakeAdmin
+        [Authorize]
+        [HttpGet("Role/ToAdmin/{id}")]
+        public async Task<IActionResult> SwitchToAdmin(int id)
+        {
+            //Get user id from token
+            var idClaim = User.Claims.FirstOrDefault(x => x.Type.ToString().Equals("Id"));
+            int _id = int.Parse(idClaim.Value);
+
+            var user = await context.Users.FirstOrDefaultAsync(u => u.UserId == _id);
+            if (user != null)
+            {
+                if ((UserRoles)user.RoleId == UserRoles.Admin)
+                {
+                    var _user = await context.Users.FirstOrDefaultAsync(u => u.UserId == id);
+                    if (_user != null && (UserRoles)_user.RoleId != UserRoles.Admin)
+                    {
+                        _user.RoleId = (int)UserRoles.Admin;
+                        _user.RoleName = UserRoles.Admin.ToString();
+
+                        await context.SaveChangesAsync();
+
+                        return Ok("User succesfully promoted to Admin");
+                    }
+                    return BadRequest("Incorrect user Id or user is Admin");
+                }
+                return BadRequest("No permission to user promotion");
+            }
+
+            return Unauthorized();
+        }
+
+        // Promote user to admin
+        // POST: api/User/Role/ToModer/{id}
+        [Authorize]
+        [HttpGet("Role/ToModer/{id}")]
+        public async Task<IActionResult> SwitchToModer(int id)
+        {
+            //Get user id from token
+            var idClaim = User.Claims.FirstOrDefault(x => x.Type.ToString().Equals("Id"));
+            int _id = int.Parse(idClaim.Value);
+
+            var user = await context.Users.FirstOrDefaultAsync(u => u.UserId == _id);
+            if (user != null)
+            {
+                if ((UserRoles)user.RoleId == UserRoles.Admin)
+                {
+                    var _user = await context.Users.FirstOrDefaultAsync(u => u.UserId == id);
+                    if (_user != null && (UserRoles)_user.RoleId != UserRoles.Admin)
+                    {
+                        _user.RoleId = (int)UserRoles.Moder;
+                        _user.RoleName = UserRoles.Moder.ToString();
+
+                        await context.SaveChangesAsync();
+
+                        return Ok("User succesfully promoted to Moder");
+                    }
+                    return BadRequest("Incorrect user Id or user is Admin");
+                }
+                return BadRequest("No permission to user promotion");
+            }
+
+            return Unauthorized();
+        }
+
+        // Promote user to admin
+        // POST: api/User/Role/ToNormal/{id}
+        [Authorize]
+        [HttpGet("Role/ToNormal/{id}")]
+        public async Task<IActionResult> SwitchToNormal(int id)
+        {
+            //Get user id from token
+            var idClaim = User.Claims.FirstOrDefault(x => x.Type.ToString().Equals("Id"));
+            int _id = int.Parse(idClaim.Value);
+
+            var user = await context.Users.FirstOrDefaultAsync(u => u.UserId == _id);
+            if (user != null)
+            {
+                if ((UserRoles)user.RoleId == UserRoles.Admin)
+                {
+                    var _user = await context.Users.FirstOrDefaultAsync(u => u.UserId == id);
+                    if (_user != null && (UserRoles)_user.RoleId != UserRoles.Admin)
+                    {
+                        _user.RoleId = (int)UserRoles.Normal;
+                        _user.RoleName = UserRoles.Normal.ToString();
+
+                        await context.SaveChangesAsync();
+
+                        return Ok("User succesfully promoted to Normal");
+                    }
+                    return BadRequest("Incorrect user Id or user is Admin");
+                }
+                return BadRequest("No permission to user promotion");
+            }
+
+            return Unauthorized();
+        }
+
         // GET USER FROM TOKEN
         // GET: api/User/Get
         [Authorize]

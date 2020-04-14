@@ -7,6 +7,9 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using BookAndPlay_API.Models;
 using BookNadPlay_API;
+using Microsoft.Extensions.Configuration;
+using Microsoft.AspNetCore.Authorization;
+using System.Security.Claims;
 
 namespace BookNadPlay_API.Controllers
 {
@@ -14,97 +17,118 @@ namespace BookNadPlay_API.Controllers
     [ApiController]
     public class FacilityController : ControllerBase
     {
-        private readonly DatabaseContext _context;
+        public IConfiguration configuration;
+        private readonly DatabaseContext context;
 
-        public FacilityController(DatabaseContext context)
+        public FacilityController(IConfiguration config, DatabaseContext context)
         {
-            _context = context;
+            this.configuration = config;
+            this.context = context;
         }
 
-        // GET: api/Facility
+        // GET: api/Facility/GetAll
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Facility>>> GetFacilities()
+        [Route("GetAll")]
+        public async Task<ActionResult<IEnumerable<Facility>>> GetAllFacilities()
         {
-            return await _context.Facilities.ToListAsync();
+            return await context.Facilities.ToListAsync();
         }
 
-        // GET: api/Facility/5
-        [HttpGet("{id}")]
+        // GET: api/Facility/Get/{id}
+        [HttpGet("Get/{id}")]
         public async Task<ActionResult<Facility>> GetFacility(int id)
         {
-            var facility = await _context.Facilities.FindAsync(id);
-
-            if (facility == null)
+            var facility = await context.Facilities.FirstOrDefaultAsync(f => f.FacilityId == id);
+            if (facility != null)
             {
-                return NotFound();
+                return BadRequest("Incorrect facility id");
             }
-
             return facility;
         }
 
-        // PUT: api/Facility/5
-        // To protect from overposting attacks, please enable the specific properties you want to bind to, for
-        // more details see https://aka.ms/RazorPagesCRUD.
-        [HttpPut("{id}")]
-        public async Task<IActionResult> PutFacility(int id, Facility facility)
+        // GET: api/Facility/User/{id}
+        [HttpGet("User/{id}")]
+        public async Task<ActionResult<IEnumerable<Facility>>> GetUserFacilities(int id)
         {
-            if (id != facility.FacilityId)
+            var user = await context.Users.FirstOrDefaultAsync(u => u.UserId == id);
+            if(user != null)
             {
-                return BadRequest();
+                return BadRequest("Incorrect user id");
             }
+            return user.Facilities.ToList();
+        }
 
-            _context.Entry(facility).State = EntityState.Modified;
+        // GET: api/Facility/Names/{name}
+        [HttpGet("Names/{name}")]
+        public async Task<ActionResult<IEnumerable<Facility>>> GetFacilitiesByName(string name)
+        {
+            var facilities = await context.Facilities.Where(f => f.Name.StartsWith(name)).ToListAsync();
+            return facilities;
+        }
 
-            try
-            {
-                await _context.SaveChangesAsync();
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                if (!FacilityExists(id))
-                {
-                    return NotFound();
-                }
-                else
-                {
-                    throw;
-                }
-            }
-
-            return NoContent();
+        // GET: api/Facility/Names/
+        [HttpGet("Names/")]
+        public ActionResult<IEnumerable<Facility>> GetAllFacilities_2()
+        {
+            return context.Facilities;
         }
 
         // POST: api/Facility
-        // To protect from overposting attacks, please enable the specific properties you want to bind to, for
-        // more details see https://aka.ms/RazorPagesCRUD.
+        [Authorize]
         [HttpPost]
-        public async Task<ActionResult<Facility>> PostFacility(Facility facility)
+        public async Task<ActionResult<Facility>> AddFacility(Facility facility)
         {
-            _context.Facilities.Add(facility);
-            await _context.SaveChangesAsync();
+            var user = await context.Users.FirstOrDefaultAsync(u => u.UserId == GetUserIdFromClaim(User));
+            if(user != null)
+            {
+                return BadRequest("Incorrect user id");
+            }
+
+            facility.Owner = user;
+
+            context.Facilities.Add(facility);
+            await context.SaveChangesAsync();
 
             return CreatedAtAction("GetFacility", new { id = facility.FacilityId }, facility);
         }
 
-        // DELETE: api/Facility/5
-        [HttpDelete("{id}")]
+        // DELETE: api/Facility/Delete/5
+        [HttpDelete("Delete/{id}")]
         public async Task<ActionResult<Facility>> DeleteFacility(int id)
         {
-            var facility = await _context.Facilities.FindAsync(id);
+            var user = await context.Users.FirstOrDefaultAsync(u => u.UserId == GetUserIdFromClaim(User));
+            if (user != null)
+            {
+                return BadRequest("Incorrect user id");
+            }
+
+            var facility = await context.Facilities.FindAsync(id);
             if (facility == null)
             {
                 return NotFound();
             }
 
-            _context.Facilities.Remove(facility);
-            await _context.SaveChangesAsync();
+            if(facility.Owner.UserId != user.UserId)
+            {
+                return BadRequest("Incorrect facility id");
+            }
 
-            return facility;
+            context.Facilities.Remove(facility);
+            await context.SaveChangesAsync();
+
+            return Ok("Facility succesfully deleted");
         }
 
         private bool FacilityExists(int id)
         {
-            return _context.Facilities.Any(e => e.FacilityId == id);
+            return context.Facilities.Any(e => e.FacilityId == id);
+        }
+
+        private int GetUserIdFromClaim(ClaimsPrincipal user)
+        {
+            //Get user id from token
+            var idClaim = user.Claims.FirstOrDefault(x => x.Type.ToString().Equals("Id"));
+            return int.Parse(idClaim.Value);
         }
     }
 }

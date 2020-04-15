@@ -67,7 +67,7 @@ namespace BookNadPlay_API.Controllers
 
                     string gen_token = new JwtSecurityTokenHandler().WriteToken(token);
                     
-                    var token_model = new TokenModel() { Token = gen_token };
+                    var token_model = new TokenModel() { Token = gen_token, User = _user };
 
                     return Ok(token_model);
                 }
@@ -82,11 +82,34 @@ namespace BookNadPlay_API.Controllers
             }
         }
 
+        [HttpGet]
+        [Route("Role")]
+        public async Task<IActionResult> GetRole()
+        {
+            //Get user id from token
+            var idClaim = User.Claims.FirstOrDefault(x => x.Type.ToString().Equals("Id"));
+            int id;
+            if (idClaim == null)
+                id = 0;
+            else
+                id = int.Parse(idClaim.Value);
+            
+
+            var user = await context.Users.FirstOrDefaultAsync(u => u.UserId == id);
+            if(user == null)
+            {
+                return Ok(new UserRole(){ Name = UserRoles.Guest.ToString() });
+            }
+
+            return Ok(new UserRole() { Name = user.RoleName });
+
+        }
+
         // ADD USER
         // POST: api/User/Add
         [HttpPost]
         [Route("Add")]
-        public async Task<IActionResult> AddUser([FromBody] User user)
+        public async Task<IActionResult> AddUser([FromBody] User_RegisterModel user_model)
         {
             
             if (!ModelState.IsValid)
@@ -94,11 +117,21 @@ namespace BookNadPlay_API.Controllers
                 return Unauthorized();
             }
 
-            var _user = await context.Users.FirstOrDefaultAsync(u => u.Email.ToLower() == user.Email.ToLower());
-            if (_user != null)
+            var user = await context.Users.FirstOrDefaultAsync(u => u.Email.ToLower() == user_model.Email.ToLower());
+            if (user != null)
             {                
                 return BadRequest("Email already in use!");
             }
+
+            //Create new user
+            user = new User()
+            {
+                Email = user_model.Email,
+                Name = user_model.Name,
+                Surname = user_model.Surname,
+                Password = user_model.Password, //TODO password hashing
+                PhoneNumber = user_model.PhoneNumber
+            };
 
             user.RoleId = (int)UserRoles.Normal;
             user.RoleName = UserRoles.Normal.ToString();

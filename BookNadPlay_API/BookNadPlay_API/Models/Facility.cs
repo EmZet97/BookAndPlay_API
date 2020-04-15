@@ -17,13 +17,9 @@ namespace BookAndPlay_API.Models
         [MinLength(3, ErrorMessage ="Name require at least 3 characters")]
         public string Name { get; set; }
 
-        [Required(ErrorMessage = "Street is required")]
-        [MinLength(3, ErrorMessage = "Street require at least 3 characters")]
-        public string Street { get; set; }
-
-        [Required(ErrorMessage = "Building name is required")]
-        [MinLength(1, ErrorMessage = "Building name require at least 1 character")]
-        public string BuildingNumber { get; set; }
+        [Required(ErrorMessage = "Address is required")]
+        [MinLength(3, ErrorMessage = "Address require at least 1 character")]
+        public string Address { get; set; }
 
         [Required(ErrorMessage = "City id is required")]
         [ForeignKey("City")]

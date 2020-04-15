@@ -131,7 +131,7 @@ namespace BookNadPlay_API.Controllers
             var sport = await context.Sports.FirstOrDefaultAsync(s => s.Name.ToLower() == facility_model.Sport.ToLower());
             if (sport == null)
             {
-                return BadRequest("Incorrect sport");
+                return BadRequest("Sport doesn't exists");
                 sport = new Sport() { Name = DataHelper.FirstLetterToUpper(facility_model.Sport) };
                 context.Sports.Add(sport);
                 context.SaveChanges();

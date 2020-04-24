@@ -31,8 +31,9 @@ namespace BookAndPlay_API.Models
         public int SportId { get; set; }
         public virtual Sport Sport { get; set; }
 
-
         public virtual User Owner { get; set; }
+
+        public virtual IEnumerable<Reservation> Reservations { get; set; }
 
         [JsonIgnore]
         public virtual IEnumerable<AccessPeriod> AccessPeriods { get; set; }

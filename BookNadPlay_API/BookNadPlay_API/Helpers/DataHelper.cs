@@ -17,5 +17,20 @@ namespace BookNadPlay_API.Helpers
 
             return str.ToUpper();
         }
+
+        public static bool CheckTime(int startHour, int startMinute, int endHour, int endMinute)
+        {
+            if (startHour > 23 || startHour < 0 || endHour > 23 || endHour < 0)
+                return false;
+
+            if (startMinute > 59 || startMinute < 0 || endMinute > 59 || endMinute < 0)
+                return false;
+
+            if (startHour > endHour || (startHour == endHour && startMinute > endMinute))
+                return false;
+
+
+            return true;
+        }
     }
 }

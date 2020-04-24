@@ -4,14 +4,16 @@ using BookNadPlay_API;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace BookNadPlay_API.Migrations
 {
     [DbContext(typeof(DatabaseContext))]
-    partial class DatabaseContextModelSnapshot : ModelSnapshot
+    [Migration("20200424152653_AccesPeriodUpdate")]
+    partial class AccesPeriodUpdate
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -29,20 +31,14 @@ namespace BookNadPlay_API.Migrations
                     b.Property<int>("DayOfWeek")
                         .HasColumnType("int");
 
-                    b.Property<int>("EndHour")
-                        .HasColumnType("int");
-
-                    b.Property<int>("EndMinute")
-                        .HasColumnType("int");
-
                     b.Property<int?>("FacilityId")
                         .HasColumnType("int");
 
-                    b.Property<int>("StartHour")
-                        .HasColumnType("int");
+                    b.Property<DateTime>("Start")
+                        .HasColumnType("datetime2");
 
-                    b.Property<int>("StartMinute")
-                        .HasColumnType("int");
+                    b.Property<DateTime>("Time")
+                        .HasColumnType("datetime2");
 
                     b.HasKey("AccessPeriodId");
 
@@ -207,7 +203,7 @@ namespace BookNadPlay_API.Migrations
             modelBuilder.Entity("BookAndPlay_API.Models.Reservation", b =>
                 {
                     b.HasOne("BookAndPlay_API.Models.Facility", "Facility")
-                        .WithMany("Reservations")
+                        .WithMany()
                         .HasForeignKey("FacilityId");
 
                     b.HasOne("BookAndPlay_API.Models.User", "User")

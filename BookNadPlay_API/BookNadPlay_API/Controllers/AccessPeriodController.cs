@@ -31,10 +31,10 @@ namespace BookNadPlay_API.Controllers
         [HttpGet("Facility/Get/{id}")]
         public async Task<ActionResult<IEnumerable<AccessPeriod>>> GetAccessPeriodsFromFacility(int id)
         {
-            var fac = await context.Facilities.Where(f => f.FacilityId == id).FirstOrDefaultAsync();
-            if(fac != null)
+            var fac = await context.Facilities.Where(f => f.FacilityId == id).Include(f => f.AccessPeriods).FirstOrDefaultAsync();
+            if(fac == null)
             {
-                return BadRequest("Incorrect facility ID");
+                return NotFound();
             }
 
             return fac.AccessPeriods.ToList();
@@ -56,22 +56,23 @@ namespace BookNadPlay_API.Controllers
 
         // POST: api/AccessPeriod/Add
         [Authorize]
-        [HttpPost("Add")]
-        public async Task<ActionResult<AccessPeriod>> AddAccesPeriod(AccessPeriod accessPeriod, int facilityId)
+        [HttpPost]
+        [Route("Add")]
+        public async Task<ActionResult<AccessPeriod>> AddAccesPeriod(AccessPeriod accessPeriod)
         {
-            var user = await context.Users.FirstOrDefaultAsync(u => u.UserId == GetUserIdFromClaim(User));
+            var user = await context.Users.Where(u => u.UserId == GetUserIdFromClaim(User)).Include(u => u.Facilities).FirstOrDefaultAsync();
             if (user == null)
             {
                 return BadRequest("Incorrect user");
             }
 
-            var fac = user.Facilities.Where(f => f.FacilityId == facilityId).FirstOrDefault();
+            Facility fac = user.Facilities.Where(f => f.FacilityId == accessPeriod.FacilityId).FirstOrDefault();
             if(fac == null)
             {
                 return BadRequest("User doesn't own that facility");
             }
 
-            if(DataHelper.CheckTime(accessPeriod.StartHour, accessPeriod.StartMinute, accessPeriod.EndHour, accessPeriod.EndHour))
+            if(!DataHelper.CheckTime(accessPeriod.StartHour ?? 0, accessPeriod.StartMinute ?? 0, accessPeriod.EndHour ?? 0, accessPeriod.EndHour ?? 0))
             {
                 return BadRequest("Incorrect time data");
             }
@@ -81,7 +82,7 @@ namespace BookNadPlay_API.Controllers
             context.AccessPeriods.Add(accessPeriod);
             await context.SaveChangesAsync();
 
-            return CreatedAtAction("GetAccessPeriod", new { id = accessPeriod.AccessPeriodId }, accessPeriod);
+            return Ok(accessPeriod);
         }
 
         // DELETE: api/AccessPeriod/Delete/5

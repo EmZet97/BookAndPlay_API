@@ -32,5 +32,18 @@ namespace BookNadPlay_API.Helpers
 
             return true;
         }
+    
+
+        public class Date
+        {
+            // Find date of day in next 7 days
+            public static DateTime GetNextDayOfWeekDate(DayOfWeek dayOfWeek)
+            {
+                int addedDays = dayOfWeek == DateTime.Today.DayOfWeek ? 0 : 7;
+                DateTime nextDayOfWeek = DateTime.Today.AddDays(((int)DateTime.Today.DayOfWeek - (int)dayOfWeek) + addedDays);
+
+                return nextDayOfWeek;
+            }
+        }
     }
 }

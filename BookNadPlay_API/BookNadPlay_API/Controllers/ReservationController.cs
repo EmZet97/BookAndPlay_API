@@ -8,6 +8,7 @@ using Microsoft.EntityFrameworkCore;
 using BookAndPlay_API.Models;
 using BookNadPlay_API;
 using Microsoft.Extensions.Configuration;
+using BookNadPlay_API.Helpers;
 
 namespace BookNadPlay_API.Controllers
 {
@@ -24,17 +25,53 @@ namespace BookNadPlay_API.Controllers
             this.context = context;
         }
 
-        // GET: api/Reservation/Get
+        // GET: api/Reservation/Get/{id}
         [HttpGet("Get/{id}")]
-        public async Task<ActionResult<IEnumerable<Reservation>>> GetReservations(int id)
+        public async Task<ActionResult<IEnumerable<Reservation>>> GetReservationsOfFacility(int id)
         {
-            var fac = context.Facilities.Where(f => f.FacilityId == id).FirstOrDefault();
+            var fac = await context.Facilities.Where(f => f.FacilityId == id).Include( f=>f.Reservations).FirstOrDefaultAsync();
             if(fac == null)
             {
-                return BadRequest("Incorrect facility id");
+                return NotFound();
             }
 
-            return await context.Reservations.ToListAsync();
+            return fac.Reservations.ToList();
+        }
+
+        //7 days period
+        // GET: api/Reservation/Available/Get/{id}
+        [HttpGet("Available/Get/{id}")]
+        public async Task<ActionResult<IEnumerable<Reservation>>> GetAvailableTerms(int id)
+        {
+            var fac = await context.Facilities.Where(f => f.FacilityId == id).Include(f => f.Reservations).Include(f => f.AccessPeriods).FirstOrDefaultAsync();
+            if(fac == null)
+            {
+                return NotFound();
+            }
+
+            // Get future reservations
+            var reservations = fac.Reservations.Where(r => r.EndTime > DateTime.Now && (r.Status == ReservationStatus.Booked || r.Status == ReservationStatus.Inactive)).ToList();
+
+            //Generate future dates and delete already booked or inactive
+            var availableDates = new List<Reservation>();
+            foreach(AccessPeriod ap in fac.AccessPeriods)
+            {
+                var date = DataHelper.Date.GetNextDayOfWeekDate(ap.DayOfWeek);
+                DateTime startTime = new DateTime(date.Year, date.Month, date.Day, ap.StartHour ?? 0, ap.StartMinute ?? 0, 0);
+                DateTime endTime = new DateTime(date.Year, date.Month, date.Day, ap.EndHour ?? 0, ap.EndMinute ?? 0, 0);
+
+                var res = reservations.Where(r => r.StartTime == startTime && r.EndTime == endTime).FirstOrDefault();
+                if (res == null)
+                    availableDates.Add(new Reservation()
+                    {
+                        StartTime = startTime,
+                        EndTime = endTime,
+                        Status = ReservationStatus.NotBooked
+                    }); ;
+            }
+
+            return availableDates;
+
         }
 
         // GET: api/Reservation/5

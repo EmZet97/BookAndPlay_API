@@ -106,13 +106,7 @@ namespace BookNadPlay_API.Controllers
         [Route("Add")]
         public async Task<ActionResult<Reservation>> PostReservation(ReservationModel reservation)
         {
-            //var address = "Stavanger, Norway";
-
-            //var locationService = new GoogleLocationService();
-            //var point = locationService.GetLatLongFromAddress(address);
-
-            //var latitude = point.Latitude;
-            //var longitude = point.Longitude;
+            //TODO
             return Ok();
             //return CreatedAtAction("GetReservation", new { id = reservation.ReservationId }, reservation);
         }

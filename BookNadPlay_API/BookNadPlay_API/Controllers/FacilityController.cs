@@ -12,6 +12,10 @@ using Microsoft.AspNetCore.Authorization;
 using System.Security.Claims;
 using BookNadPlay_API.Models;
 using BookNadPlay_API.Helpers;
+using System.Net;
+using System.Runtime.Serialization.Json;
+using Nancy.Json;
+using BookAndPlay_API.Helpers;
 
 namespace BookNadPlay_API.Controllers
 {
@@ -29,6 +33,9 @@ namespace BookNadPlay_API.Controllers
         }
 
         // GET: api/Facility/GetAll
+        /// <summary>
+        /// Returns all facilities
+        /// </summary>
         [HttpGet]
         [Route("GetAll")]
         public async Task<ActionResult<IEnumerable<Facility>>> GetAllFacilities()
@@ -37,6 +44,9 @@ namespace BookNadPlay_API.Controllers
         }
 
         // GET: api/Facility/Get/{id}
+        /// <summary>
+        /// Returns facility where id is equal to parameter given in url {id}
+        /// </summary>
         [HttpGet("Get/{id}")]
         public async Task<ActionResult<Facility>> GetFacility(int id)
         {
@@ -49,6 +59,9 @@ namespace BookNadPlay_API.Controllers
         }
 
         // GET: api/Facility/User/{id}
+        /// <summary>
+        /// Returns facilities of user. UserID given in url {id}
+        /// </summary>
         [HttpGet("User/{id}")]
         public async Task<ActionResult<IEnumerable<Facility>>> GetUserFacilities(int id)
         {
@@ -60,7 +73,12 @@ namespace BookNadPlay_API.Controllers
             return user.Facilities.ToList();
         }
 
+
+
         // GET: api/Facility/Names/{name}
+        /// <summary>
+        /// Returns facilities whose name starts with parameter given in url {name}
+        /// </summary>
         [HttpGet("Names/{name}")]
         public async Task<ActionResult<IEnumerable<Facility>>> GetFacilitiesByName(string name)
         {
@@ -69,6 +87,9 @@ namespace BookNadPlay_API.Controllers
         }
 
         // GET: api/Facility/Names/
+        /// <summary>
+        /// Returns all facilities
+        /// </summary>
         [HttpGet("Names/")]
         public ActionResult<IEnumerable<Facility>> GetAllFacilities_2()
         {
@@ -76,6 +97,9 @@ namespace BookNadPlay_API.Controllers
         }
 
         // GET: api/Facility/Filter/
+        /// <summary>
+        /// Returns filtered facilities (filter parameters aren't required)
+        /// </summary>
         [HttpGet("Filter")]
         public async Task<ActionResult<IEnumerable<Facility>>> GetFilteredFacilities(FacilityFilterModel filter)
         {
@@ -96,6 +120,9 @@ namespace BookNadPlay_API.Controllers
         }
 
         // POST: api/Facility/Add
+        /// <summary>
+        /// Adds facility
+        /// </summary>
         [Authorize]
         [HttpPost]
         [Route("Add")]
@@ -118,35 +145,39 @@ namespace BookNadPlay_API.Controllers
             }
 
             //Get or create city
-            var city = await context.Cities.FirstOrDefaultAsync(c => c.Name.ToLower() == facility_model.Name.ToLower());
+            string city_name = LocalizationHelper.GetAddress(facility_model.Lat ?? 0.0, facility_model.Lon ?? 0.0).Address.City;
+            var city = await context.Cities.FirstOrDefaultAsync(c => c.Name.ToLower() == city_name);
             if(city == null)
             {
                 //return BadRequest("Incorrect city");
-                city = new City() { Name = DataHelper.FirstLetterToUpper(facility_model.City) };
+                city = new City() { Name = city_name };
                 context.Cities.Add(city);
                 context.SaveChanges();
             }
 
-            //Get or create sport
+            //Get sport
             var sport = await context.Sports.FirstOrDefaultAsync(s => s.Name.ToLower() == facility_model.Sport.ToLower());
             if (sport == null)
             {
                 return BadRequest("Sport doesn't exists");
-                sport = new Sport() { Name = DataHelper.FirstLetterToUpper(facility_model.Sport) };
-                context.Sports.Add(sport);
-                context.SaveChanges();
+                //sport = new Sport() { Name = DataHelper.FirstLetterToUpper(facility_model.Sport) };
+                //context.Sports.Add(sport);
+                //context.SaveChanges();
             }
 
 
             var facility = new Facility()
             {
                 Owner = user,
+                Description = facility_model.Description,
                 Name = facility_model.Name,
                 Address = facility_model.Address,
                 Sport = sport,
                 SportId = sport.SportId,
                 City = city,
-                CityId = city.CityId
+                CityId = city.CityId,
+                Lat = facility_model.Lat,
+                Lon = facility_model.Lon
             };
 
             context.Facilities.Add(facility);
@@ -156,6 +187,9 @@ namespace BookNadPlay_API.Controllers
         }
 
         // DELETE: api/Facility/Delete/5
+        /// <summary>
+        /// Delete facility by id given in url
+        /// </summary>
         [HttpDelete("Delete/{id}")]
         public async Task<ActionResult<Facility>> DeleteFacility(int id)
         {

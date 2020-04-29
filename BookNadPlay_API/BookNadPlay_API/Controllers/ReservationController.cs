@@ -9,6 +9,7 @@ using BookAndPlay_API.Models;
 using BookNadPlay_API;
 using Microsoft.Extensions.Configuration;
 using BookNadPlay_API.Helpers;
+using BookNadPlay_API.Migrations;
 
 namespace BookNadPlay_API.Controllers
 {
@@ -26,6 +27,9 @@ namespace BookNadPlay_API.Controllers
         }
 
         // GET: api/Reservation/Get/{id}
+        /// <summary>
+        /// Returns reservations of facility. FacilityID given in url {id}
+        /// </summary>
         [HttpGet("Get/{id}")]
         public async Task<ActionResult<IEnumerable<Reservation>>> GetReservationsOfFacility(int id)
         {
@@ -40,6 +44,9 @@ namespace BookNadPlay_API.Controllers
 
         //7 days period
         // GET: api/Reservation/Available/Get/{id}
+        /// <summary>
+        /// Returns available (not booked) hours of facility. FacilityID given in url {id}
+        /// </summary>
         [HttpGet("Available/Get/{id}")]
         public async Task<ActionResult<IEnumerable<Reservation>>> GetAvailableTerms(int id)
         {
@@ -69,12 +76,14 @@ namespace BookNadPlay_API.Controllers
                         Status = ReservationStatus.NotBooked
                     }); ;
             }
-
             return availableDates;
 
         }
 
         // GET: api/Reservation/5
+        /// <summary>
+        /// Returns reservation. ReservationID given in url {id}
+        /// </summary>
         [HttpGet("{id}")]
         public async Task<ActionResult<Reservation>> GetReservation(int id)
         {
@@ -88,48 +97,24 @@ namespace BookNadPlay_API.Controllers
             return reservation;
         }
 
-        // PUT: api/Reservation/5
-        // To protect from overposting attacks, please enable the specific properties you want to bind to, for
-        // more details see https://aka.ms/RazorPagesCRUD.
-        [HttpPut("{id}")]
-        public async Task<IActionResult> PutReservation(int id, Reservation reservation)
-        {
-            if (id != reservation.ReservationId)
-            {
-                return BadRequest();
-            }
 
-            context.Entry(reservation).State = EntityState.Modified;
-
-            try
-            {
-                await context.SaveChangesAsync();
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                if (!ReservationExists(id))
-                {
-                    return NotFound();
-                }
-                else
-                {
-                    throw;
-                }
-            }
-
-            return NoContent();
-        }
-
-        // POST: api/Reservation
-        // To protect from overposting attacks, please enable the specific properties you want to bind to, for
-        // more details see https://aka.ms/RazorPagesCRUD.
+        // POST: api/Reservation/Add
+        /// <summary>
+        /// Adds new reservation
+        /// </summary>
         [HttpPost]
-        public async Task<ActionResult<Reservation>> PostReservation(Reservation reservation)
+        [Route("Add")]
+        public async Task<ActionResult<Reservation>> PostReservation(ReservationModel reservation)
         {
-            context.Reservations.Add(reservation);
-            await context.SaveChangesAsync();
+            //var address = "Stavanger, Norway";
 
-            return CreatedAtAction("GetReservation", new { id = reservation.ReservationId }, reservation);
+            //var locationService = new GoogleLocationService();
+            //var point = locationService.GetLatLongFromAddress(address);
+
+            //var latitude = point.Latitude;
+            //var longitude = point.Longitude;
+            return Ok();
+            //return CreatedAtAction("GetReservation", new { id = reservation.ReservationId }, reservation);
         }
 
         // DELETE: api/Reservation/5

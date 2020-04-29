@@ -27,6 +27,9 @@ namespace BookNadPlay_API.Controllers
         }
 
         // GET: api/Sport/Names/{name}
+        /// <summary>
+        /// Returns all sports whose names starts with parameter given in url {name}
+        /// </summary>
         [HttpGet("Names/{name}")]
         public async Task<ActionResult<IEnumerable<Sport>>> GetSport(string name)
         {
@@ -35,6 +38,9 @@ namespace BookNadPlay_API.Controllers
         }
 
         // GET: api/Sport/Names/
+        /// <summary>
+        /// Returns all sports
+        /// </summary>
         [HttpGet("Names/")]
         public ActionResult<IEnumerable<Sport>> GetAllSports()
         {
@@ -42,6 +48,9 @@ namespace BookNadPlay_API.Controllers
         }
 
         // POST: api/Sport/Add
+        /// <summary>
+        /// Adds new sport if not exists
+        /// </summary>
         [Authorize]
         [HttpPost("Add/")]
         public async Task<ActionResult<Sport>> AddSport(Sport sport)
@@ -60,6 +69,9 @@ namespace BookNadPlay_API.Controllers
         }
 
         // GET: api/Sport/Get/Id/{id}
+        /// <summary>
+        /// Returns sport whose ID is equal to parameter given in url {id}
+        /// </summary>
         [HttpGet("Get/Id/{id}")]
         public async Task<ActionResult<Sport>> GetSportById(int id)
         {
@@ -74,6 +86,9 @@ namespace BookNadPlay_API.Controllers
         }
 
         // GET: api/Sport/Get/Name/{name}
+        /// <summary>
+        /// Returns sport whose name is squal to parameter given in url {name}
+        /// </summary>
         [HttpGet("Get/Name/{name}")]
         public async Task<ActionResult<Sport>> GetSportByName(string name)
         {
@@ -88,6 +103,9 @@ namespace BookNadPlay_API.Controllers
         }
 
         // POST: api/Sport/Get/Name
+        /// <summary>
+        /// Returns sport whose name is squal to parameter given in body {name}
+        /// </summary>
         [HttpPost("Get/Name")]
         public async Task<ActionResult<Sport>> GetSportByName_Post([FromBody] string name)
         {
@@ -103,6 +121,9 @@ namespace BookNadPlay_API.Controllers
 
 
         // DELETE: api/Sport/Delete/{id}
+        /// <summary>
+        /// Removes sport. Uses id given in url {id}
+        /// </summary>
         [Authorize]
         [HttpDelete("Delete/{id}")]
         public async Task<ActionResult<Sport>> DeleteSport(int id)

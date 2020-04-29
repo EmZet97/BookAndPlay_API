@@ -23,6 +23,9 @@ namespace BookAndPlay_API.Models
         [Required]
         public DateTime EndTime { get; set; }
 
+        [Required]
+        public int? AccessPeriodId { get; set; }
+
         public ReservationStatus Status { get; set; } = ReservationStatus.NotBooked;
 
         public virtual User User { get; set; }

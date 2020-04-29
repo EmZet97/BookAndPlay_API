@@ -31,10 +31,13 @@ namespace BookNadPlay_API.Controllers
             this.configuration = config;
             this.context = context;
         }
-        
+
 
         // AUTHORIZE USER
         // POST: api/User/Auth
+        /// <summary>
+        /// Authorize user. Returns user data and token
+        /// </summary>
         [HttpPost]
         [Route("Auth")]
         public async Task<IActionResult> AuthorizeUser(AuthModel user)
@@ -83,6 +86,12 @@ namespace BookNadPlay_API.Controllers
 
         }
 
+
+        // GET ROLE
+        // POST: api/User/Role
+        /// <summary>
+        /// Returns user role. Gets data from Token.
+        /// </summary>
         [HttpGet]
         [Route("Role")]
         public async Task<IActionResult> GetRole()
@@ -108,6 +117,9 @@ namespace BookNadPlay_API.Controllers
 
         // ADD USER
         // POST: api/User/Add
+        /// <summary>
+        /// Adds new user
+        /// </summary>
         [HttpPost]
         [Route("Add")]
         public async Task<IActionResult> AddUser([FromBody] User_RegisterModel user_model)
@@ -145,6 +157,9 @@ namespace BookNadPlay_API.Controllers
 
         // DELETE LOGGED USER
         // DELETE: api/User/SelfDelete
+        /// <summary>
+        /// Removes user (own account deletion). Gets data from Token.
+        /// </summary>
         [Authorize]
         [HttpDelete]
         [Route("SelfDelete")]
@@ -169,7 +184,10 @@ namespace BookNadPlay_API.Controllers
         }
 
         // DELETE USER
-        // DELETE: api/User/Delete
+        // DELETE: api/User/Delete/{id}
+        /// <summary>
+        /// Removes account using its ID. Admin account required.
+        /// </summary>
         [Authorize]
         [HttpDelete("Delete/{id}")]
         public async Task<IActionResult> DeleteOtherUser(int id)
@@ -203,6 +221,9 @@ namespace BookNadPlay_API.Controllers
 
         // EDIT LOGGED USER
         // POST: api/User/SelfEdit
+        /// <summary>
+        /// Edit own account. Gets new data from body and userID from token.
+        /// </summary>
         [Authorize]
         [HttpPost]
         [Route("SelfEdit")]
@@ -232,6 +253,9 @@ namespace BookNadPlay_API.Controllers
 
         // Update USER
         // POST: api/User/Edit
+        /// <summary>
+        /// Edit other account. UserID from url and user data from body. Admin account required.
+        /// </summary>
         [Authorize]
         [HttpPost("Edit/{id}")]
         public async Task<IActionResult> EditOtherUser(int id, [FromBody] User_UpdateModel new_data)
@@ -270,7 +294,10 @@ namespace BookNadPlay_API.Controllers
 
 
         // Promote user to admin
-        // POST: api/User/MakeAdmin
+        // POST: api/User/MakeAdmin/{id}
+        /// <summary>
+        /// Change role to admin. Use id from url.
+        /// </summary>
         [Authorize]
         [HttpGet("Role/ToAdmin/{id}")]
         public async Task<IActionResult> SwitchToAdmin(int id)
@@ -304,6 +331,9 @@ namespace BookNadPlay_API.Controllers
 
         // Promote user to admin
         // POST: api/User/Role/ToModer/{id}
+        /// <summary>
+        /// Change role to moder. Use id from url.
+        /// </summary>
         [Authorize]
         [HttpGet("Role/ToModer/{id}")]
         public async Task<IActionResult> SwitchToModer(int id)
@@ -335,8 +365,12 @@ namespace BookNadPlay_API.Controllers
             return Unauthorized();
         }
 
+
         // Promote user to admin
         // POST: api/User/Role/ToNormal/{id}
+        /// <summary>
+        /// Change role to normal. Use id from url.
+        /// </summary>
         [Authorize]
         [HttpGet("Role/ToNormal/{id}")]
         public async Task<IActionResult> SwitchToNormal(int id)
@@ -370,6 +404,9 @@ namespace BookNadPlay_API.Controllers
 
         // GET USER FROM TOKEN
         // GET: api/User/Get
+        /// <summary>
+        /// Returns user data. Gets userID from Token.
+        /// </summary>
         [Authorize]
         [HttpGet]
         [Route("Get")]
@@ -384,6 +421,9 @@ namespace BookNadPlay_API.Controllers
 
         // GET ALL USERS
         // GET: api/User/GetAll
+        /// <summary>
+        /// Returns all users
+        /// </summary>
         [Authorize]
         [HttpGet]
         [Route("GetAll")]
@@ -392,7 +432,7 @@ namespace BookNadPlay_API.Controllers
             var idClaim = User.Claims.FirstOrDefault(x => x.Type.ToString().Equals("Id"));
             int id = int.Parse(idClaim.Value);
 
-            var user = context.Users.Where(u => u.UserId == id).FirstOrDefault();
+            var user = await context.Users.Where(u => u.UserId == id).FirstOrDefaultAsync();
             if(user != null)
             {
                 if((UserRoles)user.RoleId == UserRoles.Admin)
@@ -406,6 +446,9 @@ namespace BookNadPlay_API.Controllers
 
         // CHECK IF EMAIL IS IN USE
         // POST: api/User/Email/Check
+        /// <summary>
+        /// Returns Ok if user email exists or NotFound if not.
+        /// </summary>
         [HttpPost]
         [Route("Email/Check")]
         public async Task<IActionResult> CheckIfUserEmailExists([FromBody] User user)

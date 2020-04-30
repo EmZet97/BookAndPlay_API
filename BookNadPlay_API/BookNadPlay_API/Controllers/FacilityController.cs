@@ -144,15 +144,24 @@ namespace BookNadPlay_API.Controllers
 
             }
 
-            //Get or create city
-            string city_name = LocalizationHelper.GetAddress(facility_model.Lat ?? 0.0, facility_model.Lon ?? 0.0).Address.City;
+            //Get or create city                       
+            var localization = LocalizationHelper.GetAddress(facility_model.Lat ?? 0.0, facility_model.Lon ?? 0.0);
+
+            if(localization == null || localization.Address == null)
+            {
+                return BadRequest("Incorrect coordinates");
+            }
+
+            string city_name;
+            city_name = localization.Address.City;   
+            
             var city = await context.Cities.FirstOrDefaultAsync(c => c.Name.ToLower() == city_name);
             if(city == null)
             {
                 //return BadRequest("Incorrect city");
                 city = new City() { Name = city_name };
-                context.Cities.Add(city);
-                context.SaveChanges();
+               // context.Cities.Add(city);
+               // context.SaveChanges();
             }
 
             //Get sport
@@ -180,8 +189,8 @@ namespace BookNadPlay_API.Controllers
                 Lon = facility_model.Lon
             };
 
-            context.Facilities.Add(facility);
-            await context.SaveChangesAsync();
+            //context.Facilities.Add(facility);
+           // await context.SaveChangesAsync();
 
             return CreatedAtAction("GetFacility", new { id = facility.FacilityId }, facility);
         }

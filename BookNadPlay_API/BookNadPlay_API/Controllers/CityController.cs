@@ -28,6 +28,9 @@ namespace BookNadPlay_API.Controllers
         }
 
         // GET: api/City/Names/{name}
+        /// <summary>
+        /// Returns all cities whose names starts with parameter {name}
+        /// </summary>
         [HttpGet("Names/{name}")]
         public async Task<ActionResult<IEnumerable<City>>> GetCities(string name)
         {
@@ -36,6 +39,9 @@ namespace BookNadPlay_API.Controllers
         }
 
         // GET: api/City/Names/
+        /// <summary>
+        /// Returns all cities
+        /// </summary>
         [HttpGet("Names/")]
         public ActionResult<IEnumerable<City>> GetAllCities()
         {
@@ -43,6 +49,9 @@ namespace BookNadPlay_API.Controllers
         }
 
         // POST: api/City/Add
+        /// <summary>
+        /// Adds new city
+        /// </summary>
         [Authorize]
         [HttpPost("Add/")]
         public async Task<ActionResult<City>> AddCity(City city)
@@ -61,6 +70,9 @@ namespace BookNadPlay_API.Controllers
         }
 
         // GET: api/City/Get/Id/{id}
+        /// <summary>
+        /// Returns city. CityID given in url {id}
+        /// </summary>
         [HttpGet("Get/Id/{id}")]
         public async Task<ActionResult<City>> GetCityById(int id)
         {
@@ -75,6 +87,9 @@ namespace BookNadPlay_API.Controllers
         }
 
         // GET: api/City/Get/Name/{name}
+        /// <summary>
+        /// Returns city. City name given in url {name}
+        /// </summary>
         [HttpGet("Get/Name/{name}")]
         public async Task<ActionResult<City>> GetCityByName(string name)
         {
@@ -89,6 +104,9 @@ namespace BookNadPlay_API.Controllers
         }
 
         [HttpPost("Get/Name")]
+        /// <summary>
+        /// Returns city. City name given in body.
+        /// </summary>
         public async Task<ActionResult<City>> GetCityByName_Post([FromBody] string name)
         {
             var city = await context.Cities.FirstOrDefaultAsync(c => c.Name.ToLower() == name.ToLower());
@@ -103,6 +121,9 @@ namespace BookNadPlay_API.Controllers
 
 
         // DELETE: api/City/Delete/{id}
+        /// <summary>
+        /// Removes city. CityID given in url {id}.
+        /// </summary>
         [Authorize]
         [HttpDelete("Delete/{id}")]
         public async Task<ActionResult<City>> DeleteCity(int id)

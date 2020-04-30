@@ -28,6 +28,9 @@ namespace BookNadPlay_API.Controllers
         }
 
         // GET: api/AccessPeriod/Facility/Get/{id}
+        /// <summary>
+        /// Returns all access periods of facility. FacilityID fiven in url {id}
+        /// </summary>
         [HttpGet("Facility/Get/{id}")]
         public async Task<ActionResult<IEnumerable<AccessPeriod>>> GetAccessPeriodsFromFacility(int id)
         {
@@ -41,6 +44,9 @@ namespace BookNadPlay_API.Controllers
         }
 
         // GET: api/AccessPeriod/Get/{id}
+        /// <summary>
+        /// Returns access period. AccessPeriodID given in url {id}
+        /// </summary>
         [HttpGet("Get/{id}")]
         public async Task<ActionResult<AccessPeriod>> GetAccessPeriodByID(int id)
         {
@@ -55,6 +61,9 @@ namespace BookNadPlay_API.Controllers
         }
 
         // POST: api/AccessPeriod/Add
+        /// <summary>
+        /// Adds new access period.
+        /// </summary>
         [Authorize]
         [HttpPost]
         [Route("Add")]
@@ -86,6 +95,9 @@ namespace BookNadPlay_API.Controllers
         }
 
         // DELETE: api/AccessPeriod/Delete/5
+        /// <summary>
+        /// Removes access period. AccessPeriodID given in url {id}. User must be owner of facility.
+        /// </summary>
         [Authorize]
         [HttpDelete("Delete/{id}")]
         public async Task<ActionResult<AccessPeriod>> DeleteAccessPeriod(int id)

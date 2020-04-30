@@ -39,8 +39,9 @@ namespace BookNadPlay_API.Helpers
             // Find date of day in next 7 days
             public static DateTime GetNextDayOfWeekDate(DayOfWeek dayOfWeek)
             {
-                int addedDays = dayOfWeek == DateTime.Today.DayOfWeek ? 0 : 7;
-                DateTime nextDayOfWeek = DateTime.Today.AddDays(((int)DateTime.Today.DayOfWeek - (int)dayOfWeek) + addedDays);
+                int addedDays = dayOfWeek == DateTime.Today.DayOfWeek ? 7 : 0;
+                int day_diff = (((int)dayOfWeek - (int)DateTime.Today.DayOfWeek) % 7 + 7) % 7;
+                DateTime nextDayOfWeek = DateTime.Today.AddDays(day_diff + addedDays);
 
                 return nextDayOfWeek;
             }

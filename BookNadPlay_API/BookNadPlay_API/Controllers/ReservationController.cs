@@ -45,7 +45,7 @@ namespace BookNadPlay_API.Controllers
         //7 days period
         // GET: api/Reservation/Available/Get/{id}
         /// <summary>
-        /// Returns available (not booked) hours of facility. FacilityID given in url {id}
+        /// Returns available (not booked) hours of facility in next 7 days period. FacilityID given in url {id}
         /// </summary>
         [HttpGet("Available/Get/{id}")]
         public async Task<ActionResult<IEnumerable<Reservation>>> GetAvailableTerms(int id)
@@ -106,9 +106,26 @@ namespace BookNadPlay_API.Controllers
         [Route("Add")]
         public async Task<ActionResult<Reservation>> PostReservation(ReservationModel reservation)
         {
-            //TODO
-            return Ok();
-            //return CreatedAtAction("GetReservation", new { id = reservation.ReservationId }, reservation);
+            var ap = await context.AccessPeriods.Where(a => a.AccessPeriodId == reservation.AccessPeriodID).Include(a => a.Facility).FirstOrDefaultAsync();
+            var user = await context.Users.Where(u => u.UserId == (reservation.UserId ?? 0)).FirstOrDefaultAsync();
+            if(ap == null || user == null)
+            {
+                return NotFound();
+            }
+
+            var date = DataHelper.Date.GetNextDayOfWeekDate(ap.DayOfWeek);
+
+            var res = new Reservation()
+            {
+                AccessPeriodId = ap.AccessPeriodId,
+                User = user,
+                Facility = ap.Facility,
+                Status = ReservationStatus.Booked,
+                StartTime = new DateTime(date.Year, date.Month, date.Day, (int)ap.StartHour, (int)ap.StartMinute, 0),
+                EndTime = new DateTime(date.Year, date.Month, date.Day, (int)ap.EndHour, (int)ap.EndMinute, 0)
+            };
+
+            return CreatedAtAction("GetReservation", new { id = res.ReservationId }, res);
         }
 
         // DELETE: api/Reservation/5

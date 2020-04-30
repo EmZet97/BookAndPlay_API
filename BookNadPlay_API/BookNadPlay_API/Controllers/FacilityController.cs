@@ -115,7 +115,6 @@ namespace BookNadPlay_API.Controllers
             if (sport != null)
                 facilities = facilities.Where(s => s.SportId == sport.SportId).ToList();
 
-
             return Ok(facilities);
         }
 
@@ -160,8 +159,8 @@ namespace BookNadPlay_API.Controllers
             {
                 //return BadRequest("Incorrect city");
                 city = new City() { Name = city_name };
-               // context.Cities.Add(city);
-               // context.SaveChanges();
+                context.Cities.Add(city);
+                context.SaveChanges();
             }
 
             //Get sport
@@ -173,7 +172,6 @@ namespace BookNadPlay_API.Controllers
                 //context.Sports.Add(sport);
                 //context.SaveChanges();
             }
-
 
             var facility = new Facility()
             {
@@ -189,8 +187,8 @@ namespace BookNadPlay_API.Controllers
                 Lon = facility_model.Lon
             };
 
-            //context.Facilities.Add(facility);
-           // await context.SaveChangesAsync();
+            context.Facilities.Add(facility);
+            await context.SaveChangesAsync();
 
             return CreatedAtAction("GetFacility", new { id = facility.FacilityId }, facility);
         }

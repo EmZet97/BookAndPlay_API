@@ -50,7 +50,7 @@ namespace BookNadPlay_API
             });
 
             services.AddDbContext<DatabaseContext>(options =>
-                    options.UseSqlServer(Configuration.GetConnectionString("DbConnection")));
+                    options.UseSqlServer(Configuration.GetConnectionString("DbConnection2")));
 
             services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(options =>
             {

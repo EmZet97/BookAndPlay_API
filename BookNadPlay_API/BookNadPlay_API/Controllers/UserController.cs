@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
 using System.Net;
@@ -88,7 +89,7 @@ namespace BookNadPlay_API.Controllers
 
 
         // GET ROLE
-        // POST: api/User/Role
+        // GET: api/User/Role
         /// <summary>
         /// Returns user role. Gets data from Token.
         /// </summary>
@@ -112,6 +113,75 @@ namespace BookNadPlay_API.Controllers
             }
 
             return Ok(new UserRole() { Name = user.RoleName });
+
+        }
+
+
+        // Check password
+        // POST: api/User/Password/Check
+        /// <summary>
+        /// Returns true or false
+        /// </summary>
+        [HttpPost]
+        [Route("Password/Check")]
+        public async Task<IActionResult> CheckPassword([Required] string password)
+        {
+            //Get user id from token
+            var idClaim = User.Claims.FirstOrDefault(x => x.Type.ToString().Equals("Id"));
+            int id;
+            if (idClaim == null)
+                id = 0;
+            else
+                id = int.Parse(idClaim.Value);
+
+
+            var user = await context.Users.FirstOrDefaultAsync(u => u.UserId == id);
+            if (user == null)
+            {
+                return NotFound("Incorrect Token");
+            }
+
+            if(user.Password != password)
+            {
+                return Ok(false);
+            }
+
+            return Ok(true);
+
+        }
+
+        // Check password
+        // POST: api/User/Password/Change
+        /// <summary>
+        /// Change user password
+        /// </summary>
+        [HttpPost]
+        [Route("Password/Change")]
+        public async Task<IActionResult> ChangePassword(PasswordsModel passwords)
+        {
+            //Get user id from token
+            var idClaim = User.Claims.FirstOrDefault(x => x.Type.ToString().Equals("Id"));
+            int id;
+            if (idClaim == null)
+                id = 0;
+            else
+                id = int.Parse(idClaim.Value);
+
+
+            var user = await context.Users.FirstOrDefaultAsync(u => u.UserId == id);
+            if (user == null)
+            {
+                return NotFound("Incorrect Token");
+            }
+
+            if (user.Password != passwords.OldPassword)
+            {
+                return BadRequest("Incorrect old password");
+            }
+
+            user.Password = passwords.NewPassword;
+            await context.SaveChangesAsync();
+            return Ok(user);
 
         }
 
@@ -161,20 +231,19 @@ namespace BookNadPlay_API.Controllers
         /// Removes user (own account deletion). Gets data from Token.
         /// </summary>
         [Authorize]
-        [HttpDelete]
+        [HttpPost]
         [Route("SelfDelete")]
-        public async Task<IActionResult> DeleteUser()
+        public async Task<IActionResult> DeleteUser([FromBody] string password)
         {
             //Get user id from token
             var idClaim = User.Claims.FirstOrDefault(x => x.Type.ToString().Equals("Id"));
-            int id = int.Parse(idClaim.Value);
-            
+            int id = int.Parse(idClaim.Value);            
 
-            var user = await context.Users.FirstOrDefaultAsync(u => u.UserId == id);
+            var user = await context.Users.FirstOrDefaultAsync(u => u.UserId == id && u.Password == password);
             if(user!= null)
             {
                 context.Users.Remove(user);
-                await context.SaveChangesAsync();                
+                //await context.SaveChangesAsync();                
                 
                 return Ok("User succesfully deleted");
             }
@@ -244,7 +313,7 @@ namespace BookNadPlay_API.Controllers
 
                 await context.SaveChangesAsync();
 
-                return Ok("User succesfully edited");
+                return Ok(user);
             }
 
             return Unauthorized();

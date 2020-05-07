@@ -6,9 +6,14 @@ using System.Threading.Tasks;
 
 namespace BookAndPlay_API.Models
 {
-    public class ReservationModel
+    public class PasswordsModel
     {
         [Required]
-        public int? AccessPeriodID { get; set; }
+        [MinLength(6)]
+        public string OldPassword { get; set; }
+
+        [Required]
+        [MinLength(6)]
+        public string NewPassword { get; set; }
     }
 }

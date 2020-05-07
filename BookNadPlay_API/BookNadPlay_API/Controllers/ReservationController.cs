@@ -10,6 +10,8 @@ using BookNadPlay_API;
 using Microsoft.Extensions.Configuration;
 using BookNadPlay_API.Helpers;
 using BookNadPlay_API.Migrations;
+using System.Security.Claims;
+using Microsoft.AspNetCore.Authorization;
 
 namespace BookNadPlay_API.Controllers
 {
@@ -102,16 +104,23 @@ namespace BookNadPlay_API.Controllers
         /// <summary>
         /// Adds new reservation
         /// </summary>
+        [Authorize]
         [HttpPost]
         [Route("Add")]
-        public async Task<ActionResult<Reservation>> PostReservation(ReservationModel reservation)
+        public async Task<ActionResult<Reservation>> AddReservation(ReservationModel reservation)
         {
+            var user = await context.Users.FirstOrDefaultAsync(u => u.UserId == GetUserIdFromClaim(User));
+            if (user == null)
+            {
+                return BadRequest("Incorrect user id");
+            }
+
             var ap = await context.AccessPeriods.Where(a => a.AccessPeriodId == reservation.AccessPeriodID).Include(a => a.Facility).FirstOrDefaultAsync();
-            var user = await context.Users.Where(u => u.UserId == (reservation.UserId ?? 0)).FirstOrDefaultAsync();
-            if(ap == null || user == null)
+            if(ap == null || user == null || ap.Facility == null)
             {
                 return NotFound();
             }
+            
 
             var date = DataHelper.Date.GetNextDayOfWeekDate(ap.DayOfWeek);
 
@@ -125,20 +134,43 @@ namespace BookNadPlay_API.Controllers
                 EndTime = new DateTime(date.Year, date.Month, date.Day, (int)ap.EndHour, (int)ap.EndMinute, 0)
             };
 
+            var reservations = await context.Reservations.Where(r => r.AccessPeriodId == reservation.AccessPeriodID).ToListAsync();
+            var res_test = reservations.Where(r => r.StartTime == res.StartTime && r.EndTime == res.EndTime && r.Status == ReservationStatus.Booked).FirstOrDefault();
+            if(res_test != null)
+            {
+                return BadRequest("Date already booked");
+            }
+
+            context.Reservations.Add(res);
+            context.SaveChanges();
+
             return CreatedAtAction("GetReservation", new { id = res.ReservationId }, res);
         }
 
         // DELETE: api/Reservation/5
+        [Authorize]
         [HttpDelete("{id}")]
         public async Task<ActionResult<Reservation>> DeleteReservation(int id)
         {
-            var reservation = await context.Reservations.FindAsync(id);
+            var user = await context.Users.FirstOrDefaultAsync(u => u.UserId == GetUserIdFromClaim(User));
+            if (user == null)
+            {
+                return BadRequest("Incorrect user id");
+            }
+
+            var reservation = await context.Reservations.Where(r => r.ReservationId == id).Include(r => r.User).FirstOrDefaultAsync();
             if (reservation == null)
             {
                 return NotFound();
             }
 
-            context.Reservations.Remove(reservation);
+            if(reservation.User.UserId != user.UserId)
+            {
+                return Unauthorized("Other user own that reservation");
+            }
+
+            // Change status to Cancelled
+            reservation.Status = ReservationStatus.Cancelled;
             await context.SaveChangesAsync();
 
             return reservation;
@@ -148,5 +180,13 @@ namespace BookNadPlay_API.Controllers
         {
             return context.Reservations.Any(e => e.ReservationId == id);
         }
+
+        private int GetUserIdFromClaim(ClaimsPrincipal user)
+        {
+            //Get user id from token
+            var idClaim = user.Claims.FirstOrDefault(x => x.Type.ToString().Equals("Id"));
+            return int.Parse(idClaim.Value);
+        }
+
     }
 }

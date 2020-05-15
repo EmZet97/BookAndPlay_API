@@ -16,6 +16,8 @@ using System.Net;
 using System.Runtime.Serialization.Json;
 using Nancy.Json;
 using BookAndPlay_API.Helpers;
+using System.IO;
+using System.Net.Http.Headers;
 
 namespace BookNadPlay_API.Controllers
 {
@@ -65,11 +67,31 @@ namespace BookNadPlay_API.Controllers
         [HttpGet("User/{id}")]
         public async Task<ActionResult<IEnumerable<Facility>>> GetUserFacilities(int id)
         {
-            var user = await context.Users.FirstOrDefaultAsync(u => u.UserId == id);
-            if(user == null)
+            var user = await context.Users.Where(u => u.UserId == id).Include(u => u.Facilities).FirstOrDefaultAsync();
+            if (user == null)
             {
                 return BadRequest("Incorrect user id");
             }
+            return user.Facilities.ToList();
+        }
+
+
+        // GET: api/Facility/Own
+        /// <summary>
+        /// Returns facilities of user. UserID given in Token
+        /// </summary>
+        [Authorize]
+        [HttpGet("Own")]
+        public async Task<ActionResult<IEnumerable<Facility>>> GetUserFacilitiesFromToken()
+        {
+            var user = await context.Users.Where(u => u.UserId == GetUserIdFromClaim(User)).Include(u => u.Facilities).FirstOrDefaultAsync();
+            if (user == null)
+            {
+                return BadRequest("Incorrect user id");
+            }
+            if (user.Facilities == null)
+                return null;
+
             return user.Facilities.ToList();
         }
 
@@ -143,12 +165,17 @@ namespace BookNadPlay_API.Controllers
 
             }
 
+            if (!DataHelper.IsPhoneNumber(facility_model.Phone))
+            {
+                return BadRequest("Incorrect phone number");
+            }
+
             //Get or create city                       
             var localization = LocalizationHelper.GetAddress(facility_model.Lat ?? 0.0, facility_model.Lon ?? 0.0);
 
             if(localization == null || localization.Address == null)
             {
-                return BadRequest("Incorrect coordinates");
+                return NotFound("Incorrect coordinates");
             }
 
             string city_name;
@@ -172,6 +199,7 @@ namespace BookNadPlay_API.Controllers
                 //context.Sports.Add(sport);
                 //context.SaveChanges();
             }
+            //SaveImages(facility_model.Images);
 
             var facility = new Facility()
             {
@@ -184,7 +212,8 @@ namespace BookNadPlay_API.Controllers
                 City = city,
                 CityId = city.CityId,
                 Lat = facility_model.Lat,
-                Lon = facility_model.Lon
+                Lon = facility_model.Lon,
+                Phone = facility_model.Phone
             };
 
             context.Facilities.Add(facility);
@@ -233,6 +262,36 @@ namespace BookNadPlay_API.Controllers
             //Get user id from token
             var idClaim = user.Claims.FirstOrDefault(x => x.Type.ToString().Equals("Id"));
             return int.Parse(idClaim.Value);
+        }
+
+        private List<string> SaveImages(List<IFormFile> files)
+        {
+            long size = files.Sum(f => f.Length);
+            List<string> images = new List<string>();
+
+            // Check directory
+            string subPath = Path.Combine(Directory.GetCurrentDirectory(),
+                            "PublicFiles", "Images", "User002");
+            bool exists = Directory.Exists(subPath);
+            if (!exists)
+                Directory.CreateDirectory(subPath);
+
+
+            foreach (var file in files)
+            {
+                if (file.Length > 0 && file.ContentType.Contains("image"))
+                {
+                    var filePath = Path.Combine(subPath, file.FileName);
+
+                    using (var stream = System.IO.File.Create(filePath))
+                    {
+                        file.CopyTo(stream);
+                        images.Add(filePath);
+                    }
+                }
+            }
+
+            return images;
         }
 
         private bool Exists(string name, IEnumerable<object> array)

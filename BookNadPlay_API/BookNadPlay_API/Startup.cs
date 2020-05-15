@@ -18,6 +18,7 @@ using System.Text;
 using Microsoft.OpenApi.Models;
 using System.Reflection;
 using System.IO;
+using Microsoft.Extensions.FileProviders;
 
 namespace BookNadPlay_API
 {
@@ -80,7 +81,7 @@ namespace BookNadPlay_API
             if (env.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();
-            }            
+            }
 
             app.UseRouting();
 
@@ -95,6 +96,8 @@ namespace BookNadPlay_API
             {
                 endpoints.MapControllers();
             });
+
+            
 
             // Enable middleware to serve generated Swagger as a JSON endpoint.
             app.UseSwagger();

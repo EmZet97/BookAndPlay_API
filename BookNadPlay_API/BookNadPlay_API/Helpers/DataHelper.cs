@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace BookNadPlay_API.Helpers
@@ -45,6 +46,28 @@ namespace BookNadPlay_API.Helpers
 
                 return nextDayOfWeek;
             }
+        }
+
+        public static bool IsTimeOverlapping(DateTime from1, DateTime to1, DateTime from2, DateTime to2)
+        {
+            if(from1 > from2 && from1 < to2)
+            {
+                return true;
+            }
+
+            if(to1 > from2 && to1 < to2)
+            {
+                return true;
+            }
+
+            return false;
+        }
+
+
+        public static bool IsPhoneNumber(string number)
+        {
+            return true;
+            return Regex.Match(number, @"^(\+[0-9]{9})$").Success;
         }
     }
 }

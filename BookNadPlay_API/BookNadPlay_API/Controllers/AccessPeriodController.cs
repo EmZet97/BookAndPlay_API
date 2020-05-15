@@ -94,6 +94,48 @@ namespace BookNadPlay_API.Controllers
             return Ok(accessPeriod);
         }
 
+        // POST: api/AccessPeriod/Add
+        /// <summary>
+        /// Adds new access period.
+        /// </summary>
+        [Authorize]
+        [HttpPost]
+        [Route("AddFew")]
+        public async Task<ActionResult<AccessPeriod>> AddAccesPeriods(List<AccessPeriod> accessPeriods)
+        {
+            var user = await context.Users.Where(u => u.UserId == GetUserIdFromClaim(User)).Include(u => u.Facilities).FirstOrDefaultAsync();
+            if (user == null)
+            {
+                return BadRequest("Incorrect user");
+            }
+
+            Facility fac = user.Facilities.Where(f => f.FacilityId == accessPeriod.FacilityId).FirstOrDefault();
+            if (fac == null)
+            {
+                return BadRequest("User doesn't own that facility");
+            }
+
+            foreach(AccessPeriod ap in accessPeriods)
+            {
+                if (!DataHelper.CheckTime(ap.StartHour ?? 0, ap.StartMinute ?? 0, ap.EndHour ?? 0, ap.EndHour ?? 0))
+                {
+                    return BadRequest("Incorrect time data");
+                }
+
+                //get facility periods of day
+                var check = context.AccessPeriods.Where(a => a.FacilityId == ap.FacilityId).Where(a => a.DayOfWeek == ap.DayOfWeek).ToListAsync();
+
+
+                ap.Facility = fac;
+
+                context.AccessPeriods.Add(accessPeriod);
+            }
+            
+            await context.SaveChangesAsync();
+
+            return Ok(accessPeriod);
+        }
+
         // DELETE: api/AccessPeriod/Delete/5
         /// <summary>
         /// Removes access period. AccessPeriodID given in url {id}. User must be owner of facility.

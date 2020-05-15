@@ -10,6 +10,7 @@ using System.Text;
 using System.Threading.Tasks;
 using BookAndPlay_API.Models;
 using BookNadPlay_API;
+using BookNadPlay_API.Helpers;
 using BookNadPlay_API.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -206,6 +207,11 @@ namespace BookNadPlay_API.Controllers
                 return BadRequest("Email already in use!");
             }
 
+            if (!DataHelper.IsPhoneNumber(user_model.PhoneNumber))
+            {
+                return BadRequest("Incorrect phone number");
+            }
+
             //Create new user
             user = new User()
             {
@@ -301,6 +307,11 @@ namespace BookNadPlay_API.Controllers
             //Get user id from token
             var idClaim = User.Claims.FirstOrDefault(x => x.Type.ToString().Equals("Id"));
             int id = int.Parse(idClaim.Value);
+
+            if (!DataHelper.IsPhoneNumber(new_data.PhoneNumber))
+            {
+                return BadRequest("Incorrect phone number");
+            }
 
             var user = await context.Users.FirstOrDefaultAsync(u => u.UserId == id);
             if (user != null)

@@ -21,6 +21,9 @@ namespace BookAndPlay_API.Models
         [MinLength(3, ErrorMessage = "Description require at least 3 characters")]
         public string Description { get; set; }
 
+        [Required]
+        public string Phone { get; set; }
+
         [Required(ErrorMessage = "Address is required")]
         [MinLength(3, ErrorMessage = "Address require at least 1 character")]
         public string Address { get; set; } //Full adress string

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.AspNetCore.Http;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
@@ -29,5 +30,11 @@ namespace BookNadPlay_API.Models
         [Required(ErrorMessage = "Sport name is required")]
         [MinLength(2, ErrorMessage = "Sport name require at least 2 characters")]
         public string Sport { get; set; }
+
+        [Required]
+        [DataType(DataType.PhoneNumber, ErrorMessage = "Incorrect phone number structure")]
+        public string Phone { get; set; }
+
+        //public IFormFile Images { get; set; }
     }
 }

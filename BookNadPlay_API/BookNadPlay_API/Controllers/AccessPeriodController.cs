@@ -196,7 +196,7 @@ namespace BookNadPlay_API.Controllers
         /// </summary>
         [Authorize]
         [HttpPost("ForceDelete/{facilityID}")]
-        public async Task<ActionResult<AccessPeriod>> DeleteAccessPeriods(int facilityID, IEnumerable<int> accesPeriodIDs)
+        public async Task<ActionResult<AccessPeriod>> ForceDeleteAccessPeriods(int facilityID, IEnumerable<int> accesPeriodIDs)
         {
             var user = await context.Users.FirstOrDefaultAsync(u => u.UserId == GetUserIdFromClaim(User));
             if (user == null)
@@ -224,7 +224,7 @@ namespace BookNadPlay_API.Controllers
 
 
                 //Reservations
-                var reservations = await context.Reservations.Where(r => r.AccessPeriodId == id && r.StartTime > DateTime.Now).ToListAsync();
+                var reservations = await context.Reservations.Where(r => r.AccessPeriodId == id && r.StartTime > DateTime.Now && r.Status == ReservationStatus.Booked).ToListAsync();
 
                 foreach(var res in reservations)
                 {
@@ -248,6 +248,123 @@ namespace BookNadPlay_API.Controllers
 
             return Ok(facility.AccessPeriods);
         }
+
+
+        // DELETE: api/AccessPeriod/TryDelete
+        /// <summary>
+        /// Removes given access periods if they have no reservations. Any reservation returns error. FacilityID in url, acces periods ids in body array
+        /// </summary>
+        [Authorize]
+        [HttpPost("TryDelete/{facilityID}")]
+        public async Task<ActionResult<AccessPeriod>> TryDeleteAccessPeriods(int facilityID, IEnumerable<int> accesPeriodIDs)
+        {
+            var user = await context.Users.FirstOrDefaultAsync(u => u.UserId == GetUserIdFromClaim(User));
+            if (user == null)
+            {
+                return BadRequest("Incorrect user");
+            }
+
+
+            var facility = await context.Facilities.Where(f => f.FacilityId == facilityID).Include(f => f.Owner).Include(f => f.AccessPeriods).FirstOrDefaultAsync();
+
+            if (facility == null || facility.Owner.UserId != user.UserId)
+            {
+                return BadRequest("You are not owner of that facility");
+            }
+
+            var apToDelete = new List<AccessPeriod>();
+            var resToCancel = new List<Reservation>();
+
+            foreach (var id in accesPeriodIDs)
+            {
+                var accessPeriod = facility.AccessPeriods.Where(a => a.AccessPeriodId == id).FirstOrDefault();
+
+                if (accessPeriod == null)
+                    return NotFound("Acces period not found in this facility");
+
+
+                //Reservations
+                var reservations = await context.Reservations.Where(r => r.AccessPeriodId == id && r.StartTime > DateTime.Now && r.Status == ReservationStatus.Booked).ToListAsync();
+
+                if(reservations != null && reservations.Count > 0)
+
+                foreach (var res in reservations)
+                {
+                    resToCancel.Add(res);
+                }
+
+                apToDelete.Add(accessPeriod);
+            }
+
+            if (resToCancel != null && resToCancel.Count > 0)
+                return BadRequest("Access periods are booked already");
+            
+
+            foreach (var ap in apToDelete)
+            {
+                context.AccessPeriods.Remove(ap);
+            }
+
+            await context.SaveChangesAsync();
+
+            return Ok(facility.AccessPeriods);
+        }
+
+        // DELETE: api/AccessPeriod/ForceDelete/5
+        /// <summary>
+        /// Removes only access periods with no reservations. FacilityID in url, acces periods ids in body array
+        /// </summary>
+        [Authorize]
+        [HttpPost("AllowableDelete/{facilityID}")]
+        public async Task<ActionResult<AccessPeriod>> AllowableDeleteAccessPeriods(int facilityID, IEnumerable<int> accesPeriodIDs)
+        {
+            var user = await context.Users.FirstOrDefaultAsync(u => u.UserId == GetUserIdFromClaim(User));
+            if (user == null)
+            {
+                return BadRequest("Incorrect user");
+            }
+
+
+            var facility = await context.Facilities.Where(f => f.FacilityId == facilityID).Include(f => f.Owner).Include(f => f.AccessPeriods).FirstOrDefaultAsync();
+
+            if (facility == null || facility.Owner.UserId != user.UserId)
+            {
+                return BadRequest("You are not owner of that facility");
+            }
+
+            var apToDelete = new List<AccessPeriod>();
+            var resToCancel = new List<Reservation>();
+
+            foreach (var id in accesPeriodIDs)
+            {
+                var accessPeriod = facility.AccessPeriods.Where(a => a.AccessPeriodId == id).FirstOrDefault();
+
+                if (accessPeriod == null)
+                    return NotFound("Acces period not found in this facility");
+
+
+                //Reservations
+                var reservations = await context.Reservations.Where(r => r.AccessPeriodId == id && r.StartTime > DateTime.Now && r.Status == ReservationStatus.Booked).ToListAsync();
+
+                if (reservations != null && reservations.Count > 0)
+                {
+                    continue;
+                }
+
+                apToDelete.Add(accessPeriod);
+            }
+
+            foreach (var ap in apToDelete)
+            {
+                context.AccessPeriods.Remove(ap);
+            }
+
+            await context.SaveChangesAsync();
+
+            return Ok(facility.AccessPeriods);
+        }
+
+
 
         private bool AccessPeriodExists(int id)
         {

@@ -182,10 +182,12 @@ namespace BookNadPlay_API.Controllers
                 return NotFound();
             }
 
+            var fac_id = accessPeriod.FacilityId;
             context.AccessPeriods.Remove(accessPeriod);
             await context.SaveChangesAsync();
 
-            return accessPeriod;
+            var accesPeriods = await context.AccessPeriods.Where(a => a.FacilityId == fac_id).FirstOrDefaultAsync();
+            return Ok(accesPeriods);
         }
 
         // DELETE: api/AccessPeriod/ForceDelete/5

@@ -76,7 +76,7 @@ namespace BookNadPlay_API.Controllers
                         StartTime = startTime,
                         EndTime = endTime,
                         Status = ReservationStatus.NotBooked
-                    }); ;
+                    }); 
             }
             return availableDates;
 
@@ -97,6 +97,49 @@ namespace BookNadPlay_API.Controllers
             }
 
             return reservation;
+        }
+
+
+        //7 days period
+        // GET: api/Reservation/Available/GetAll/{id}
+        /// <summary>
+        /// Returns available (not booked) hours of facility in next 7 days period and also booked ones. FacilityID given in url {id}
+        /// </summary>
+        [HttpGet("Available/GetAll/{id}")]
+        public async Task<ActionResult<IEnumerable<Reservation>>> GetAllTerms(int id)
+        {
+            var fac = await context.Facilities.Where(f => f.FacilityId == id).Include(f => f.Reservations).Include(f => f.AccessPeriods).FirstOrDefaultAsync();
+            if (fac == null)
+            {
+                return NotFound();
+            }
+
+            // Get future reservations
+            var reservations = fac.Reservations.Where(r => r.EndTime > DateTime.Now && (r.Status == ReservationStatus.Booked || r.Status == ReservationStatus.Inactive)).ToList();
+
+            //Generate future dates and delete already booked or inactive
+            var allDates = new List<Reservation>();
+            foreach (AccessPeriod ap in fac.AccessPeriods)
+            {
+                var date = DataHelper.Date.GetNextDayOfWeekDate(ap.DayOfWeek);
+                DateTime startTime = new DateTime(date.Year, date.Month, date.Day, ap.StartHour ?? 0, ap.StartMinute ?? 0, 0);
+                DateTime endTime = new DateTime(date.Year, date.Month, date.Day, ap.EndHour ?? 0, ap.EndMinute ?? 0, 0);
+
+                var res = reservations.Where(r => r.StartTime == startTime && r.EndTime == endTime).FirstOrDefault();
+                if (res == null)
+                    allDates.Add(new Reservation()
+                    {
+                        StartTime = startTime,
+                        EndTime = endTime,
+                        Status = ReservationStatus.NotBooked
+                    });
+                else
+                    allDates.Add(res);
+            }
+
+
+            return allDates;
+
         }
 
 

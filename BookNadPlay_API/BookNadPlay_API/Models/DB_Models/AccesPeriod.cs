@@ -32,9 +32,16 @@ namespace BookAndPlay_API.Models
         [Required]
         public DayOfWeek DayOfWeek { get; set; }
 
+        [JsonIgnore]
+        public DateTime FromDate { get; set; }
+
+        [JsonIgnore]
+        public DateTime ToDate { get; set; }
+
         [Required]
         [ForeignKey("Facility")]
         public int FacilityId { get; set; }
+
         [JsonIgnore]
         public virtual Facility Facility { get; set; }
 

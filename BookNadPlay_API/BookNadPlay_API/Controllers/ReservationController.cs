@@ -35,7 +35,7 @@ namespace BookNadPlay_API.Controllers
         [HttpGet("Get/{id}")]
         public async Task<ActionResult<IEnumerable<Reservation>>> GetReservationsOfFacility(int id)
         {
-            var fac = await context.Facilities.Where(f => f.FacilityId == id).Include( f=>f.Reservations).FirstOrDefaultAsync();
+            var fac = await context.Facilities.Where(f => f.FacilityId == id).Include( f=>f.Reservations).Include(f=>f.Owner).FirstOrDefaultAsync();
             if(fac == null)
             {
                 return NotFound();

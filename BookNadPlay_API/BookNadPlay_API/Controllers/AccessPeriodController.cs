@@ -86,6 +86,21 @@ namespace BookNadPlay_API.Controllers
                 return BadRequest("Incorrect time data");
             }
 
+            //get facility periods of day
+            var facs = context.AccessPeriods.Where(a => a.FacilityId == accessPeriod.FacilityId).Where(a => a.DayOfWeek == accessPeriod.DayOfWeek).ToList();
+            if (facs != null)
+            {
+                foreach (AccessPeriod a in facs)
+                {
+                    var f1 = new TimeSpan(accessPeriod.StartHour ?? 0, accessPeriod.StartMinute ?? 0, 0);
+                    var t1 = new TimeSpan(accessPeriod.EndHour ?? 0, accessPeriod.EndMinute ?? 0, 0);
+                    var f2 = new TimeSpan(a.StartHour ?? 0, a.StartMinute ?? 0, 0);
+                    var t2 = new TimeSpan(a.EndHour ?? 0, a.EndMinute ?? 0, 0);
+                    if (DataHelper.IsTimeOverlapping(f1, t1, f2, t2))
+                        return BadRequest("Time periods overlapping on existing ones");
+                }
+            }
+
             accessPeriod.Facility = fac;
 
             context.AccessPeriods.Add(accessPeriod);
@@ -96,7 +111,7 @@ namespace BookNadPlay_API.Controllers
 
         // POST: api/AccessPeriod/Add
         /// <summary>
-        /// Adds new access period.
+        /// Adds new access periods.
         /// </summary>
         [Authorize]
         [HttpPost]
@@ -107,33 +122,44 @@ namespace BookNadPlay_API.Controllers
             if (user == null)
             {
                 return BadRequest("Incorrect user");
-            }
-
-            Facility fac = user.Facilities.Where(f => f.FacilityId == accessPeriod.FacilityId).FirstOrDefault();
-            if (fac == null)
-            {
-                return BadRequest("User doesn't own that facility");
-            }
+            }            
 
             foreach(AccessPeriod ap in accessPeriods)
             {
+                Facility fac = user.Facilities.Where(f => f.FacilityId == ap.FacilityId).FirstOrDefault();
+                if (fac == null)
+                {
+                    return BadRequest("User doesn't own that facility");
+                }
+
                 if (!DataHelper.CheckTime(ap.StartHour ?? 0, ap.StartMinute ?? 0, ap.EndHour ?? 0, ap.EndHour ?? 0))
                 {
                     return BadRequest("Incorrect time data");
                 }
 
                 //get facility periods of day
-                var check = context.AccessPeriods.Where(a => a.FacilityId == ap.FacilityId).Where(a => a.DayOfWeek == ap.DayOfWeek).ToListAsync();
-
+                var facs = context.AccessPeriods.Where(a => a.FacilityId == ap.FacilityId).Where(a => a.DayOfWeek == ap.DayOfWeek).ToList();
+                if(facs != null)
+                {
+                    foreach (AccessPeriod a in facs)
+                    {
+                        var f1 = new TimeSpan(ap.StartHour ?? 0, ap.StartMinute ?? 0, 0);
+                        var t1 = new TimeSpan(ap.EndHour ?? 0, ap.EndMinute ?? 0, 0);
+                        var f2 = new TimeSpan(a.StartHour ?? 0, a.StartMinute ?? 0, 0);
+                        var t2 = new TimeSpan(a.EndHour ?? 0, a.EndMinute ?? 0, 0);
+                        if (DataHelper.IsTimeOverlapping(f1, t1, f2, t2))
+                            return BadRequest("Time periods overlapping on existing ones");
+                    }
+                }     
 
                 ap.Facility = fac;
 
-                context.AccessPeriods.Add(accessPeriod);
+                context.AccessPeriods.Add(ap);
             }
             
             await context.SaveChangesAsync();
 
-            return Ok(accessPeriod);
+            return Ok(accessPeriods);
         }
 
         // DELETE: api/AccessPeriod/Delete/5
@@ -160,6 +186,65 @@ namespace BookNadPlay_API.Controllers
             await context.SaveChangesAsync();
 
             return accessPeriod;
+        }
+
+        // DELETE: api/AccessPeriod/ForceDelete/5
+        /// <summary>
+        /// Removes access periods even if there was reservations. FacilityID in url, acces periods ids in body array
+        /// </summary>
+        [Authorize]
+        [HttpPost("ForceDelete/{facilityID}")]
+        public async Task<ActionResult<AccessPeriod>> DeleteAccessPeriods(int facilityID, IEnumerable<int> accesPeriodIDs)
+        {
+            var user = await context.Users.FirstOrDefaultAsync(u => u.UserId == GetUserIdFromClaim(User));
+            if (user == null)
+            {
+                return BadRequest("Incorrect user");
+            }
+            
+
+            var facility = await context.Facilities.Where(f => f.FacilityId == facilityID).Include(f => f.Owner).Include(f => f.AccessPeriods).FirstOrDefaultAsync();
+
+            if(facility == null || facility.Owner.UserId != user.UserId)
+            {
+                return BadRequest("You are not owner of that facility");
+            }
+
+            var apToDelete = new List<AccessPeriod>();
+            var resToCancel = new List<Reservation>();
+
+            foreach(var id in accesPeriodIDs)
+            {
+                var accessPeriod = facility.AccessPeriods.Where(a => a.AccessPeriodId == id).FirstOrDefault();
+
+                if (accessPeriod == null)
+                    return NotFound("Acces period not found in this facility");
+
+
+                //Reservations
+                var reservations = await context.Reservations.Where(r => r.AccessPeriodId == id && r.StartTime > DateTime.Now).ToListAsync();
+
+                foreach(var res in reservations)
+                {
+                    resToCancel.Add(res);
+                }
+
+                apToDelete.Add(accessPeriod);
+            }
+
+            foreach (var res in resToCancel)
+            {
+                res.Status = ReservationStatus.Cancelled;
+            }
+
+            foreach (var ap in apToDelete)
+            {
+                context.AccessPeriods.Remove(ap);
+            }
+
+            await context.SaveChangesAsync();
+
+            return Ok(facility.AccessPeriods);
         }
 
         private bool AccessPeriodExists(int id)

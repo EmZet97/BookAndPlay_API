@@ -16,6 +16,19 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="Migrations\20200522141247_AddedUserIdToFacilit.cs" />
+    <Compile Remove="Migrations\20200522141247_AddedUserIdToFacilit.Designer.cs" />
+    <Compile Remove="Migrations\20200522141708_AddedUserIdToFacility.cs" />
+    <Compile Remove="Migrations\20200522141708_AddedUserIdToFacility.Designer.cs" />
+    <Compile Remove="Migrations\20200522142308_BackValues.cs" />
+    <Compile Remove="Migrations\20200522142308_BackValues.Designer.cs" />
+    <Compile Remove="Migrations\20200522142720_AddedUserIdToFacility.cs" />
+    <Compile Remove="Migrations\20200522142720_AddedUserIdToFacility.Designer.cs" />
+    <Compile Remove="Migrations\20200522142852_AddedUserIdToFacility.cs" />
+    <Compile Remove="Migrations\20200522142852_AddedUserIdToFacility.Designer.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Microsoft.AspNet.WebApi.Cors" Version="5.2.7" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="3.1.4" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="3.1.4" />
@@ -32,7 +45,6 @@
 
   <ItemGroup>
     <Folder Include="PublicFiles\Images\Facilities\" />
-    <Folder Include="PublicFiles\Images\User001\" />
   </ItemGroup>
 
 

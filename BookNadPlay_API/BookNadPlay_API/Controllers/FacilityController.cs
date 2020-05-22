@@ -72,7 +72,14 @@ namespace BookNadPlay_API.Controllers
             {
                 return BadRequest("Incorrect user id");
             }
-            return user.Facilities.ToList();
+
+            var ids = user.Facilities.Select(f => f.FacilityId).ToList();
+            var facilities = await context.Facilities.Where(f => ids.Contains(f.FacilityId)).Include(f => f.Sport).Include(f => f.City).ToListAsync();
+
+            if (facilities == null)
+                return null;
+
+            return Ok(facilities);
         }
 
 
@@ -89,10 +96,14 @@ namespace BookNadPlay_API.Controllers
             {
                 return BadRequest("Incorrect user id");
             }
-            if (user.Facilities == null)
+
+            var ids = user.Facilities.Select(f => f.FacilityId).ToList();
+            var facilities = await context.Facilities.Where(f => ids.Contains(f.FacilityId)).Include(f => f.Sport).Include(f => f.City).ToListAsync();
+
+            if (facilities == null)
                 return null;
 
-            return user.Facilities.ToList();
+            return Ok(facilities);
         }
 
 
@@ -118,11 +129,11 @@ namespace BookNadPlay_API.Controllers
             return context.Facilities.Include(f => f.Owner).Include(f => f.Sport).Include(f => f.City).ToList();
         }
 
-        // GET: api/Facility/Filter/
+        // POST: api/Facility/Filter/
         /// <summary>
         /// Returns filtered facilities (filter parameters aren't required)
         /// </summary>
-        [HttpGet("Filter")]
+        [HttpPost("Filter")]
         public async Task<ActionResult<IEnumerable<Facility>>> GetFilteredFacilities(FacilityFilterModel filter)
         {
             var sport = await context.Facilities.FirstOrDefaultAsync(s => s.Name.ToLower() == filter.Sport.ToLower());

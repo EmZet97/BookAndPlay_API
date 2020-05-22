@@ -26,24 +26,24 @@ namespace BookAndPlay_API.Controllers
             this.context = context;
         }
 
-        [HttpGet("Get")]
-        public IActionResult GetImage()
+        [HttpGet("Get/{imageName}")]
+        public IActionResult GetImages(string imageName)
         {
-            var file = Path.Combine(Directory.GetCurrentDirectory(),
-                            "PublicFiles", "Images", "test.jpg");
+            var file = Path.Combine(Directory.GetCurrentDirectory(), "PublicFiles", "Images", "Tester", imageName);
 
             return PhysicalFile(file, "image/jpg");
         }
 
-        [HttpPost("Upload")]
-        public async Task<IActionResult> UploadImage(List<IFormFile> files)
+        [HttpPost("UploadFew")]
+        public async Task<IActionResult> UploadImages(IFormFile[] files)
         {
             long size = files.Sum(f => f.Length);
             List<string> images = new List<string>();
 
             // Check directory
-            string subPath = Path.Combine(Directory.GetCurrentDirectory(),
-                            "PublicFiles", "Images", "User001");
+            string dirPath = Path.Combine("PublicFiles", "Images", "Tester");
+            string subPath = Path.Combine(Directory.GetCurrentDirectory(), dirPath);
+
             bool exists = Directory.Exists(subPath);
             if (!exists)
                 Directory.CreateDirectory(subPath);
@@ -58,7 +58,7 @@ namespace BookAndPlay_API.Controllers
                     using (var stream = System.IO.File.Create(filePath))
                     {
                         await file.CopyToAsync(stream);
-                        images.Add(filePath);
+                        images.Add(file.FileName);
                     }
                 }
                 else
@@ -67,7 +67,46 @@ namespace BookAndPlay_API.Controllers
                 }
             }
 
-            return Ok(images);
+            if(images.Count > 0)
+                return Ok(images);
+
+            return BadRequest("No images found");
+        }
+
+        [HttpPost("Upload")]
+        public async Task<IActionResult> UploadImage(IFormFile file)
+        {
+            string image = "";
+
+            // Check directory
+            string dirPath = Path.Combine("PublicFiles", "Images", "Tester");
+            string subPath = Path.Combine(Directory.GetCurrentDirectory(), dirPath);
+
+            bool exists = Directory.Exists(subPath);
+            if (!exists)
+                Directory.CreateDirectory(subPath);
+
+
+            if (file.Length > 0 && file.ContentType.Contains("image"))
+            {
+                var filePath = Path.Combine(subPath, file.FileName);
+
+                using (var stream = System.IO.File.Create(filePath))
+                {
+                    await file.CopyToAsync(stream);
+                    image = file.FileName;
+                }
+            }
+            else
+            {
+                return BadRequest("Incorrect image type");
+            }
+            
+
+            if (image.Length > 0)
+                return Ok(image);
+
+            return BadRequest("No image found");
         }
 
 

@@ -48,14 +48,22 @@ namespace BookNadPlay_API.Helpers
             }
         }
 
-        public static bool IsTimeOverlapping(DateTime from1, DateTime to1, DateTime from2, DateTime to2)
+        public static bool IsTimeOverlapping(TimeSpan from1, TimeSpan to1, TimeSpan from2, TimeSpan to2)
         {
-            if(from1 > from2 && from1 < to2)
+            //Starts inside
+            if(from1 >= from2 && from1 < to2)
             {
                 return true;
             }
 
-            if(to1 > from2 && to1 < to2)
+            //Ends inside
+            if(to1 > from2 && to1 <= to2)
+            {
+                return true;
+            }
+
+            //Starts before and ends after
+            if (from1 <= from2 && to1 >= to2)
             {
                 return true;
             }

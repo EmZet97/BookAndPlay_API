@@ -100,7 +100,7 @@ namespace BookNadPlay_API.Controllers
                         return BadRequest("Time periods overlapping on existing ones");
                 }
             }
-
+            accessPeriod.FromDate = DateTime.Now;
             accessPeriod.Facility = fac;
 
             context.AccessPeriods.Add(accessPeriod);

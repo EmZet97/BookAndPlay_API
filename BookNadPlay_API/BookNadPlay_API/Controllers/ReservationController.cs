@@ -12,6 +12,7 @@ using BookNadPlay_API.Helpers;
 using BookNadPlay_API.Migrations;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
+using BookAndPlay_API.Helpers;
 
 namespace BookNadPlay_API.Controllers
 {
@@ -41,7 +42,9 @@ namespace BookNadPlay_API.Controllers
                 return NotFound();
             }
 
-            return fac.Reservations.ToList();
+            var reservations = fac.Reservations.ToList().Where(r => r.Status == ReservationStatus.Booked).ToList();
+
+            return reservations;
         }
 
         //7 days period
@@ -55,30 +58,38 @@ namespace BookNadPlay_API.Controllers
             var fac = await context.Facilities.Where(f => f.FacilityId == id).Include(f => f.Reservations).Include(f => f.AccessPeriods).FirstOrDefaultAsync();
             if(fac == null)
             {
-                return NotFound();
+                return NotFound("Facility not found");
             }
 
             // Get future reservations
-            var reservations = fac.Reservations.Where(r => r.EndTime > DateTime.Now && (r.Status == ReservationStatus.Booked || r.Status == ReservationStatus.Inactive)).ToList();
+            var booked = fac.Reservations.Where(r => r.EndTime > DateTime.Now && (r.Status == ReservationStatus.Booked || r.Status == ReservationStatus.Cancelled)).ToList();
+            var inactive = fac.Reservations.Where(r => r.EndTime > DateTime.Now && (r.Status == ReservationStatus.Inactive)).ToList();
 
             //Generate future dates and delete already booked or inactive
             var availableDates = new List<Reservation>();
             foreach(AccessPeriod ap in fac.AccessPeriods)
             {
-                var date = DataHelper.Date.GetNextDayOfWeekDate(ap.DayOfWeek);
-                DateTime startTime = new DateTime(date.Year, date.Month, date.Day, ap.StartHour ?? 0, ap.StartMinute ?? 0, 0);
-                DateTime endTime = new DateTime(date.Year, date.Month, date.Day, ap.EndHour ?? 0, ap.EndMinute ?? 0, 0);
+                var res = ReservationsHelper.GetEmptyIfAvailable(ap, booked, inactive);
 
-                var res = reservations.Where(r => r.StartTime == startTime && r.EndTime == endTime).FirstOrDefault();
-                if (res == null)
-                    availableDates.Add(new Reservation()
-                    {
-                        StartTime = startTime,
-                        EndTime = endTime,
-                        Status = ReservationStatus.NotBooked
-                    }); 
+                if (res != null)
+                    availableDates.Add(res);
             }
             return availableDates;
+
+        }
+
+        [HttpGet("Available/JebnijDaty")]
+        public async Task<ActionResult<IEnumerable<Reservation>>> JebnijDaty()
+        {
+            var acc = await context.AccessPeriods.ToListAsync();
+            foreach(var a in acc)
+            {
+                a.FromDate = DateTime.Now;
+                a.ToDate = DateTime.Today.AddYears(100);
+            }
+
+            await context.SaveChangesAsync();
+            return Ok("Jebło");
 
         }
 
@@ -105,7 +116,7 @@ namespace BookNadPlay_API.Controllers
         /// <summary>
         /// Returns available (not booked) hours of facility in next 7 days period and also booked ones. FacilityID given in url {id}
         /// </summary>
-        [HttpGet("Available/GetAll/{id}")]
+        [HttpGet("GetAll/{id}")]
         public async Task<ActionResult<IEnumerable<Reservation>>> GetAllTerms(int id)
         {
             var fac = await context.Facilities.Where(f => f.FacilityId == id).Include(f => f.Reservations).Include(f => f.AccessPeriods).FirstOrDefaultAsync();
@@ -115,25 +126,16 @@ namespace BookNadPlay_API.Controllers
             }
 
             // Get future reservations
-            var reservations = fac.Reservations.Where(r => r.EndTime > DateTime.Now && (r.Status == ReservationStatus.Booked || r.Status == ReservationStatus.Inactive)).ToList();
+            var booked = fac.Reservations.Where(r => r.EndTime > DateTime.Now && (r.Status == ReservationStatus.Booked || r.Status == ReservationStatus.Cancelled)).ToList();
+            var inactive = fac.Reservations.Where(r => r.EndTime > DateTime.Now && (r.Status == ReservationStatus.Inactive)).ToList();
 
             //Generate future dates and delete already booked or inactive
             var allDates = new List<Reservation>();
             foreach (AccessPeriod ap in fac.AccessPeriods)
             {
-                var date = DataHelper.Date.GetNextDayOfWeekDate(ap.DayOfWeek);
-                DateTime startTime = new DateTime(date.Year, date.Month, date.Day, ap.StartHour ?? 0, ap.StartMinute ?? 0, 0);
-                DateTime endTime = new DateTime(date.Year, date.Month, date.Day, ap.EndHour ?? 0, ap.EndMinute ?? 0, 0);
+                var res = ReservationsHelper.GetExistingOrEmpty(ap, booked, inactive);
 
-                var res = reservations.Where(r => r.StartTime == startTime && r.EndTime == endTime).FirstOrDefault();
-                if (res == null)
-                    allDates.Add(new Reservation()
-                    {
-                        StartTime = startTime,
-                        EndTime = endTime,
-                        Status = ReservationStatus.NotBooked
-                    });
-                else
+                if (res != null)
                     allDates.Add(res);
             }
 
@@ -219,10 +221,6 @@ namespace BookNadPlay_API.Controllers
             return reservation;
         }
 
-        private bool ReservationExists(int id)
-        {
-            return context.Reservations.Any(e => e.ReservationId == id);
-        }
 
         private int GetUserIdFromClaim(ClaimsPrincipal user)
         {

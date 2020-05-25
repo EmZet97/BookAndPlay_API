@@ -72,26 +72,29 @@ namespace BookNadPlay_API.Controllers
                 var res = ReservationsHelper.GetEmptyIfAvailable(ap, booked, inactive);
 
                 if (res != null)
+                {
+                    res.Facility = fac;
                     availableDates.Add(res);
+                }
             }
             return availableDates;
 
         }
 
-        [HttpGet("Available/JebnijDaty")]
-        public async Task<ActionResult<IEnumerable<Reservation>>> JebnijDaty()
-        {
-            var acc = await context.AccessPeriods.ToListAsync();
-            foreach(var a in acc)
-            {
-                a.FromDate = DateTime.Now;
-                a.ToDate = DateTime.Today.AddYears(100);
-            }
+        //[HttpGet("Available/JebnijDaty")]
+        //public async Task<ActionResult<IEnumerable<Reservation>>> JebnijDaty()
+        //{
+        //    var acc = await context.AccessPeriods.ToListAsync();
+        //    foreach (var a in acc)
+        //    {
+        //        a.FromDate = DateTime.Now;
+        //        a.ToDate = DateTime.Today.AddYears(100);
+        //    }
 
-            await context.SaveChangesAsync();
-            return Ok("Jebło");
+        //    await context.SaveChangesAsync();
+        //    return Ok("Jebło");
 
-        }
+        //}
 
         // GET: api/Reservation/5
         /// <summary>
@@ -136,7 +139,11 @@ namespace BookNadPlay_API.Controllers
                 var res = ReservationsHelper.GetExistingOrEmpty(ap, booked, inactive);
 
                 if (res != null)
+                {
+                    res.Facility = fac;
                     allDates.Add(res);
+                }
+                    
             }
 
 
@@ -157,7 +164,7 @@ namespace BookNadPlay_API.Controllers
             var user = await context.Users.FirstOrDefaultAsync(u => u.UserId == GetUserIdFromClaim(User));
             if (user == null)
             {
-                return BadRequest("Incorrect user id");
+                return Unauthorized("Incorrect user id");
             }
 
             var ap = await context.AccessPeriods.Where(a => a.AccessPeriodId == reservation.AccessPeriodID).Include(a => a.Facility).FirstOrDefaultAsync();
@@ -185,6 +192,48 @@ namespace BookNadPlay_API.Controllers
             {
                 return BadRequest("Date already booked");
             }
+
+            context.Reservations.Add(res);
+            context.SaveChanges();
+
+            return CreatedAtAction("GetReservation", new { id = res.ReservationId }, res);
+        }
+
+        // POST: api/Reservation/Inactive/Add
+        /// <summary>
+        /// Adds inactive reservation
+        /// </summary>
+        [Authorize]
+        [HttpPost]
+        [Route("Inactive/Add")]
+        public async Task<ActionResult<Reservation>> AddInactiveReservation(InactiveReservationModel reservation)
+        {
+            var user = await context.Users.FirstOrDefaultAsync(u => u.UserId == GetUserIdFromClaim(User));
+            if (user == null)
+            {
+                return Unauthorized("Incorrect user id");
+            }
+
+            var facility = await context.Facilities.Where(f => f.FacilityId == reservation.FacilityId).FirstOrDefaultAsync();
+
+            if (facility == null)
+                return BadRequest("Incorrect facility id");
+
+            //Check dates
+            if (reservation.FromDate < reservation.ToDate)
+                return BadRequest("Incorrect dates");
+
+            if (reservation.FromDate < DateTime.Now.AddDays(7))
+                return BadRequest("Start date must be 7 days ahead");
+            
+            var res = new Reservation()
+            {
+                User = user,
+                Facility = facility,
+                Status = ReservationStatus.Inactive,
+                StartTime = reservation.FromDate,
+                EndTime = reservation.ToDate
+            };
 
             context.Reservations.Add(res);
             context.SaveChanges();

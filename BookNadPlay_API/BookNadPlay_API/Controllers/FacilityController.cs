@@ -136,17 +136,24 @@ namespace BookNadPlay_API.Controllers
         [HttpPost("Filter")]
         public async Task<ActionResult<IEnumerable<Facility>>> GetFilteredFacilities(FacilityFilterModel filter)
         {
-            var sport = await context.Facilities.FirstOrDefaultAsync(s => s.Name.ToLower() == filter.Sport.ToLower());
-            var city = await context.Cities.FirstOrDefaultAsync(c => c.Name.ToLower() == filter.City.ToLower());
-            var facilities = await (filter.Name != null ? context.Facilities.Where(f => f.Name.ToLower().StartsWith(filter.Name.ToLower())).Include(f => f.Owner).Include(f => f.Sport).Include(f => f.City).ToListAsync() : context.Facilities.Include(f => f.Owner).Include(f => f.Sport).Include(f => f.City).ToListAsync());
+            var sport = filter.Sport != null && filter.Sport.Length > 0 ? await context.Sports.Where(s => s.Name.ToLower().Contains(filter.Sport.ToLower())).FirstOrDefaultAsync() : null;
+            var city = filter.City != null && filter.City.Length > 0 ? await context.Cities.Where(c => c.Name.ToLower().Contains(filter.City.ToLower())).FirstOrDefaultAsync() : null;
+
+            var facilities = filter.Name != null ? 
+                await context.Facilities.Where(f => f.Name.ToLower().StartsWith(filter.Name.ToLower())).Include(f => f.Owner).Include(f => f.Sport).Include(f => f.City).ToListAsync() : 
+                await context.Facilities.Include(f => f.Owner).Include(f => f.Sport).Include(f => f.City).ToListAsync();
 
             //City filter
-            if(city != null)
+            if (city != null)
                 facilities = facilities.Where(c => c.CityId == city.CityId).ToList();
+            else if (filter.City != null && filter.City.Length > 0)
+                facilities = new List<Facility>();
 
             //City filter
             if (sport != null)
                 facilities = facilities.Where(s => s.SportId == sport.SportId).ToList();
+            else if (filter.Sport != null && filter.Sport.Length > 0)
+                facilities = new List<Facility>();
 
             return Ok(facilities);
         }

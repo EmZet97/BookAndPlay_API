@@ -45,7 +45,8 @@ namespace BookAndPlay_API.Helpers
             {
                 StartTime = startTime,
                 EndTime = endTime,
-                Status = ReservationStatus.NotBooked
+                Status = ReservationStatus.NotBooked,
+                AccessPeriodId = accessPeriod.AccessPeriodId
             };
             
         }
@@ -78,7 +79,8 @@ namespace BookAndPlay_API.Helpers
             {
                 StartTime = startTime,
                 EndTime = endTime,
-                Status = ReservationStatus.NotBooked
+                Status = ReservationStatus.NotBooked,
+                AccessPeriodId = accessPeriod.AccessPeriodId
             };
 
         }

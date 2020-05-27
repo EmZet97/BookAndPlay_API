@@ -47,6 +47,42 @@ namespace BookNadPlay_API.Controllers
             return reservations;
         }
 
+        // GET: api/Reservation/New/Get/{id}
+        /// <summary>
+        /// Returns future reservations of facility. FacilityID given in url {id}
+        /// </summary>
+        [HttpGet("Get/New/{id}")]
+        public async Task<ActionResult<IEnumerable<Reservation>>> GetFutureReservationsOfFacility(int id)
+        {
+            var fac = await context.Facilities.Where(f => f.FacilityId == id).Include(f => f.Reservations).Include(f => f.Owner).FirstOrDefaultAsync();
+            if (fac == null)
+            {
+                return NotFound();
+            }
+
+            var reservations = fac.Reservations.ToList().Where(r => r.Status == ReservationStatus.Booked && r.EndTime > DateTime.Now).ToList();
+
+            return reservations;
+        }
+
+        // GET: api/Reservation/New/Get/{id}
+        /// <summary>
+        /// Returns archived reservations of facility. FacilityID given in url {id}
+        /// </summary>
+        [HttpGet("Get/Old/{id}")]
+        public async Task<ActionResult<IEnumerable<Reservation>>> GetArchivedReservationsOfFacility(int id)
+        {
+            var fac = await context.Facilities.Where(f => f.FacilityId == id).Include(f => f.Reservations).Include(f => f.Owner).FirstOrDefaultAsync();
+            if (fac == null)
+            {
+                return NotFound();
+            }
+
+            var reservations = fac.Reservations.ToList().Where(r => r.Status == ReservationStatus.Booked && r.EndTime < DateTime.Now).ToList();
+
+            return reservations;
+        }
+
         //7 days period
         // GET: api/Reservation/Available/Get/{id}
         /// <summary>
@@ -81,20 +117,6 @@ namespace BookNadPlay_API.Controllers
 
         }
 
-        //[HttpGet("Available/JebnijDaty")]
-        //public async Task<ActionResult<IEnumerable<Reservation>>> JebnijDaty()
-        //{
-        //    var acc = await context.AccessPeriods.ToListAsync();
-        //    foreach (var a in acc)
-        //    {
-        //        a.FromDate = DateTime.Now;
-        //        a.ToDate = DateTime.Today.AddYears(100);
-        //    }
-
-        //    await context.SaveChangesAsync();
-        //    return Ok("Jebło");
-
-        //}
 
         // GET: api/Reservation/5
         /// <summary>
@@ -115,7 +137,7 @@ namespace BookNadPlay_API.Controllers
 
 
         //7 days period
-        // GET: api/Reservation/Available/GetAll/{id}
+        // GET: api/Reservation/GetAll/GetAll/{id}
         /// <summary>
         /// Returns available (not booked) hours of facility in next 7 days period and also booked ones. FacilityID given in url {id}
         /// </summary>
@@ -197,6 +219,72 @@ namespace BookNadPlay_API.Controllers
             context.SaveChanges();
 
             return CreatedAtAction("GetReservation", new { id = res.ReservationId }, res);
+        }
+
+        // POST: api/Reservation/AddFew
+        /// <summary>
+        /// Adds new reservations
+        /// </summary>
+        [Authorize]
+        [HttpPost]
+        [Route("AddFew")]
+        public async Task<ActionResult<Reservation>> AddReservations(List<ReservationModel> reservations)
+        {
+            var user = await context.Users.FirstOrDefaultAsync(u => u.UserId == GetUserIdFromClaim(User));
+            if (user == null)
+            {
+                return Unauthorized("Incorrect user id");
+            }
+
+            if(reservations == null || reservations.Count == 0)
+            {
+                return BadRequest("Empty request");
+            }
+
+            if (reservations.Where(r => r.AccessPeriodID == reservations[0].AccessPeriodID).ToList().Count < reservations.Count)
+                return BadRequest("More than one facility id in one request");
+
+            var accesPeriodIds = reservations.Select(r => r.AccessPeriodID).ToList();
+
+            var accessPeriods = await context.AccessPeriods.Where(a => accesPeriodIds.Contains(a.AccessPeriodId)).Include(a => a.Facility).ToListAsync();
+            var booked_reservations = await context.Reservations.Where(r => accesPeriodIds.Contains(r.AccessPeriodId) && (r.Status == ReservationStatus.Booked || r.Status == ReservationStatus.Inactive) && r.EndTime > DateTime.Now).ToListAsync();
+
+            if (accessPeriods == null || user == null || accessPeriods.Count == 0)
+            {
+                return NotFound();
+            }
+
+            var reservationsToAdd = new List<Reservation>();
+
+            foreach (var accessPeriod in accessPeriods)
+            {
+                var date = DataHelper.Date.GetNextDayOfWeekDate(accessPeriod.DayOfWeek);
+
+                var res = new Reservation()
+                {
+                    AccessPeriodId = accessPeriod.AccessPeriodId,
+                    User = user,
+                    Facility = accessPeriod.Facility,
+                    Status = ReservationStatus.Booked,
+                    StartTime = new DateTime(date.Year, date.Month, date.Day, (int)accessPeriod.StartHour, (int)accessPeriod.StartMinute, 0),
+                    EndTime = new DateTime(date.Year, date.Month, date.Day, (int)accessPeriod.EndHour, (int)accessPeriod.EndMinute, 0)
+                };
+
+                var _reservations = booked_reservations.Where(r => r.AccessPeriodId == res.AccessPeriodId).ToList();
+
+                var res_test = _reservations.Where(r => r.StartTime == res.StartTime && r.EndTime == res.EndTime).FirstOrDefault();
+                if (res_test != null)
+                {
+                    return BadRequest("Found already booked date");
+                }
+
+                reservationsToAdd.Add(res);
+            }
+
+            context.Reservations.AddRange(reservationsToAdd);
+            context.SaveChanges();
+
+            return CreatedAtAction("GetAllTerms", new { id = accessPeriods[0].FacilityId }, accessPeriods[0].FacilityId);
         }
 
         // POST: api/Reservation/Inactive/Add

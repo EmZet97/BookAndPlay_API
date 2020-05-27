@@ -136,22 +136,22 @@ namespace BookNadPlay_API.Controllers
         [HttpPost("Filter")]
         public async Task<ActionResult<IEnumerable<Facility>>> GetFilteredFacilities(FacilityFilterModel filter)
         {
-            var sport = filter.Sport != null && filter.Sport.Length > 0 ? await context.Sports.Where(s => s.Name.ToLower().Contains(filter.Sport.ToLower())).FirstOrDefaultAsync() : null;
-            var city = filter.City != null && filter.City.Length > 0 ? await context.Cities.Where(c => c.Name.ToLower().Contains(filter.City.ToLower())).FirstOrDefaultAsync() : null;
+            var sports = filter.Sport != null && filter.Sport.Length > 0 ? await context.Sports.Where(s => s.Name.ToLower().Contains(filter.Sport.ToLower())).Select(s => s.SportId).ToListAsync() : null;
+            var cities = filter.City != null && filter.City.Length > 0 ? await context.Cities.Where(c => c.Name.ToLower().Contains(filter.City.ToLower())).Select(c => c.CityId).ToListAsync() : null;
 
             var facilities = filter.Name != null ? 
                 await context.Facilities.Where(f => f.Name.ToLower().StartsWith(filter.Name.ToLower())).Include(f => f.Owner).Include(f => f.Sport).Include(f => f.City).ToListAsync() : 
                 await context.Facilities.Include(f => f.Owner).Include(f => f.Sport).Include(f => f.City).ToListAsync();
 
             //City filter
-            if (city != null)
-                facilities = facilities.Where(c => c.CityId == city.CityId).ToList();
+            if (cities != null)
+                facilities = facilities.Where(c => cities.Contains(c.CityId)).ToList();
             else if (filter.City != null && filter.City.Length > 0)
                 facilities = new List<Facility>();
 
             //City filter
-            if (sport != null)
-                facilities = facilities.Where(s => s.SportId == sport.SportId).ToList();
+            if (sports != null)
+                facilities = facilities.Where(s => sports.Contains(s.SportId)).ToList();
             else if (filter.Sport != null && filter.Sport.Length > 0)
                 facilities = new List<Facility>();
 
@@ -197,7 +197,9 @@ namespace BookNadPlay_API.Controllers
             }
 
             string city_name;
-            city_name = localization.Address.City;   
+            city_name = localization.Address.City;
+            if (city_name == null || city_name.Length == 0)
+                return BadRequest("Can't find city name for that localization");
             
             var city = await context.Cities.FirstOrDefaultAsync(c => c.Name.ToLower() == city_name);
             if(city == null)

@@ -42,7 +42,7 @@ namespace BookNadPlay_API.Controllers
         [Route("GetAll")]
         public async Task<ActionResult<IEnumerable<Facility>>> GetAllFacilities()
         {
-            return await context.Facilities.Include(f => f.Owner).Include(f => f.Sport).Include(f => f.City).ToListAsync();
+            return await context.Facilities.Include(f => f.Owner).Include(f => f.Sport).Include(f => f.FacilityImages).Include(f => f.City).ToListAsync();
         }
 
         // GET: api/Facility/Get/{id}
@@ -52,7 +52,7 @@ namespace BookNadPlay_API.Controllers
         [HttpGet("Get/{id}")]
         public async Task<ActionResult<Facility>> GetFacility(int id)
         {
-            var facility = await context.Facilities.Include(f => f.Owner).Include(f => f.Sport).Include(f => f.City).FirstOrDefaultAsync(f => f.FacilityId == id);
+            var facility = await context.Facilities.Include(f => f.Owner).Include(f => f.Sport).Include(f => f.City).Include(f => f.FacilityImages).FirstOrDefaultAsync(f => f.FacilityId == id);
             if (facility == null)
             {
                 return BadRequest("Incorrect facility id");
@@ -74,7 +74,7 @@ namespace BookNadPlay_API.Controllers
             }
 
             var ids = user.Facilities.Select(f => f.FacilityId).ToList();
-            var facilities = await context.Facilities.Where(f => ids.Contains(f.FacilityId)).Include(f => f.Sport).Include(f => f.City).ToListAsync();
+            var facilities = await context.Facilities.Where(f => ids.Contains(f.FacilityId)).Include(f => f.FacilityImages).Include(f => f.Sport).Include(f => f.City).ToListAsync();
 
             if (facilities == null)
                 return null;
@@ -98,7 +98,7 @@ namespace BookNadPlay_API.Controllers
             }
 
             var ids = user.Facilities.Select(f => f.FacilityId).ToList();
-            var facilities = await context.Facilities.Where(f => ids.Contains(f.FacilityId)).Include(f => f.Sport).Include(f => f.City).ToListAsync();
+            var facilities = await context.Facilities.Where(f => ids.Contains(f.FacilityId)).Include(f => f.FacilityImages).Include(f => f.Sport).Include(f => f.City).ToListAsync();
 
             if (facilities == null)
                 return null;
@@ -115,7 +115,7 @@ namespace BookNadPlay_API.Controllers
         [HttpGet("Names/{name}")]
         public async Task<ActionResult<IEnumerable<Facility>>> GetFacilitiesByName(string name)
         {
-            var facilities = await context.Facilities.Where(f => f.Name.StartsWith(name)).Include(f => f.Owner).Include(f => f.Sport).Include(f => f.City).ToListAsync();
+            var facilities = await context.Facilities.Where(f => f.Name.StartsWith(name)).Include(f => f.Owner).Include(f => f.FacilityImages).Include(f => f.Sport).Include(f => f.City).ToListAsync();
             return facilities;
         }
 
@@ -126,7 +126,7 @@ namespace BookNadPlay_API.Controllers
         [HttpGet("Names/")]
         public ActionResult<IEnumerable<Facility>> GetAllFacilities_2()
         {
-            return context.Facilities.Include(f => f.Owner).Include(f => f.Sport).Include(f => f.City).ToList();
+            return context.Facilities.Include(f => f.Owner).Include(f => f.Sport).Include(f => f.FacilityImages).Include(f => f.City).ToList();
         }
 
         // POST: api/Facility/Filter/
@@ -140,8 +140,8 @@ namespace BookNadPlay_API.Controllers
             var cities = filter.City != null && filter.City.Length > 0 ? await context.Cities.Where(c => c.Name.ToLower().Contains(filter.City.ToLower())).Select(c => c.CityId).ToListAsync() : null;
 
             var facilities = filter.Name != null ? 
-                await context.Facilities.Where(f => f.Name.ToLower().StartsWith(filter.Name.ToLower())).Include(f => f.Owner).Include(f => f.Sport).Include(f => f.City).ToListAsync() : 
-                await context.Facilities.Include(f => f.Owner).Include(f => f.Sport).Include(f => f.City).ToListAsync();
+                await context.Facilities.Where(f => f.Name.ToLower().StartsWith(filter.Name.ToLower())).Include(f => f.AccessPeriods).Include(f => f.Reservations).Include(f => f.FacilityImages).Include(f => f.Owner).Include(f => f.Sport).Include(f => f.City).ToListAsync() : 
+                await context.Facilities.Include(f => f.Owner).Include(f => f.Sport).Include(f => f.AccessPeriods).Include(f => f.Reservations).Include(f => f.FacilityImages).Include(f => f.City).ToListAsync();
 
             //City filter
             if (cities != null)
@@ -149,11 +149,27 @@ namespace BookNadPlay_API.Controllers
             else if (filter.City != null && filter.City.Length > 0)
                 facilities = new List<Facility>();
 
-            //City filter
+            //Sport filter
             if (sports != null)
                 facilities = facilities.Where(s => sports.Contains(s.SportId)).ToList();
             else if (filter.Sport != null && filter.Sport.Length > 0)
                 facilities = new List<Facility>();
+
+            //Available filter
+            if (filter.Available != null)
+            {
+                List<Facility> availableFacilities = new List<Facility>();
+                List<Facility> notAvailableFacilities = new List<Facility>();
+                foreach(var f in facilities)
+                {
+                    if (f.Reservations.Where(r => r.Status.Equals(ReservationStatus.Booked) && r.StartTime > DateTime.Now).Count() < f.AccessPeriods.Count())
+                        availableFacilities.Add(f);
+                    else
+                        notAvailableFacilities.Add(f);
+                }
+                return filter.Available == true ? availableFacilities : notAvailableFacilities;
+            }
+
 
             return Ok(facilities);
         }

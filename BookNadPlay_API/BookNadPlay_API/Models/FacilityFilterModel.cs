@@ -14,5 +14,7 @@ namespace BookNadPlay_API.Models
         public string Sport { get; set; }
 
         public int? Day { get; set; }
+
+        public bool? Available { get; set; }
     }
 }

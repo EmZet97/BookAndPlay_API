@@ -1,4 +1,5 @@
 ﻿using BookAndPlay_API.Models;
+using BookAndPlay_API.Models.DB_Models;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
@@ -20,5 +21,6 @@ namespace BookNadPlay_API
         public DbSet<Facility> Facilities { get; set; }
         public DbSet<Sport> Sports { get; set; }
         public DbSet<City> Cities { get; set; }
+        public DbSet<FacilityImage> FacilityImages { get; set; }
     }
 }

@@ -51,7 +51,7 @@ namespace BookNadPlay_API.Controllers
         /// <summary>
         /// Returns future reservations of facility. FacilityID given in url {id}
         /// </summary>
-        [HttpGet("Get/New/{id}")]
+        [HttpGet("New/Get/{id}")]
         public async Task<ActionResult<IEnumerable<Reservation>>> GetFutureReservationsOfFacility(int id)
         {
             var fac = await context.Facilities.Where(f => f.FacilityId == id).Include(f => f.Reservations).Include(f => f.Owner).FirstOrDefaultAsync();
@@ -65,11 +65,11 @@ namespace BookNadPlay_API.Controllers
             return reservations;
         }
 
-        // GET: api/Reservation/New/Get/{id}
+        // GET: api/Reservation/Archived/Get/{id}
         /// <summary>
         /// Returns archived reservations of facility. FacilityID given in url {id}
         /// </summary>
-        [HttpGet("Get/Old/{id}")]
+        [HttpGet("Archived/Get/{id}")]
         public async Task<ActionResult<IEnumerable<Reservation>>> GetArchivedReservationsOfFacility(int id)
         {
             var fac = await context.Facilities.Where(f => f.FacilityId == id).Include(f => f.Reservations).Include(f => f.Owner).FirstOrDefaultAsync();
@@ -241,8 +241,9 @@ namespace BookNadPlay_API.Controllers
                 return BadRequest("Empty request");
             }
 
-            if (reservations.Where(r => r.AccessPeriodID == reservations[0].AccessPeriodID).ToList().Count < reservations.Count)
-                return BadRequest("More than one facility id in one request");
+            //TODO - idiotic xD
+            //if (reservations.Where(r => r.AccessPeriodID == reservations[0].AccessPeriodID).ToList().Count < reservations.Count)
+               // return BadRequest("More than one facility id in one request");
 
             var accesPeriodIds = reservations.Select(r => r.AccessPeriodID).ToList();
 
@@ -347,6 +348,35 @@ namespace BookNadPlay_API.Controllers
             }
 
             if(reservation.User.UserId != user.UserId)
+            {
+                return Unauthorized("Other user own that reservation");
+            }
+
+            // Change status to Cancelled
+            reservation.Status = ReservationStatus.Cancelled;
+            await context.SaveChangesAsync();
+
+            return reservation;
+        }
+
+        // DELETE: api/Reservation/Cancel/5
+        [Authorize]
+        [HttpDelete("/cancel/{id}")]
+        public async Task<ActionResult<Reservation>> CancelReservation(int id)
+        {
+            var user = await context.Users.FirstOrDefaultAsync(u => u.UserId == GetUserIdFromClaim(User));
+            if (user == null)
+            {
+                return BadRequest("Incorrect user id");
+            }
+
+            var reservation = await context.Reservations.Where(r => r.ReservationId == id).Include(r => r.User).FirstOrDefaultAsync();
+            if (reservation == null)
+            {
+                return NotFound();
+            }
+
+            if (reservation.User.UserId != user.UserId)
             {
                 return Unauthorized("Other user own that reservation");
             }

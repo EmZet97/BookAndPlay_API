@@ -85,6 +85,8 @@ namespace BookNadPlay_API
 
             app.UseRouting();
 
+            
+
             // Use the CORS policy, allow all
             app.UseCors(options => options.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod());
 
@@ -107,6 +109,13 @@ namespace BookNadPlay_API
             app.UseSwaggerUI(c =>
             {
                 c.SwaggerEndpoint("/swagger/v1/swagger.json", "My API V1");
+            });
+
+            app.UseStaticFiles(new StaticFileOptions
+            {
+                FileProvider = new PhysicalFileProvider(
+            Path.Combine(Directory.GetCurrentDirectory(), "wwwroot")),
+                RequestPath = "/Files"
             });
         }
     }

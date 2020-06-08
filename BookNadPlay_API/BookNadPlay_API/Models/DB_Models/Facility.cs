@@ -1,4 +1,5 @@
-﻿using System;
+﻿using BookAndPlay_API.Models.DB_Models;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -52,6 +53,8 @@ namespace BookAndPlay_API.Models
 
         [JsonIgnore]
         public virtual IEnumerable<AccessPeriod> AccessPeriods { get; set; }
+
+        public virtual IEnumerable<FacilityImage> FacilityImages { get; set; }
 
 
     }

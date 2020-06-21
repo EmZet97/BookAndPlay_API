@@ -29,29 +29,45 @@ namespace BookNadPlay_API.Controllers
             this.context = context;
         }
 
-        // GET: api/Reservation/Get/{id}
+        //7 days period
+        // GET: api/Reservation/Facility/{id}/Upcoming/Availabl
         /// <summary>
-        /// Returns reservations of facility. FacilityID given in url {id}
+        /// Returns available (not booked) hours of facility in next 7 days period. FacilityID given in url {id}
         /// </summary>
-        [HttpGet("Get/{id}")]
-        public async Task<ActionResult<IEnumerable<Reservation>>> GetReservationsOfFacility(int id)
+        [HttpGet("Facility/{id}/Upcoming/Available")]
+        public async Task<ActionResult<IEnumerable<Reservation>>> GetAvailableTerms(int id)
         {
-            var fac = await context.Facilities.Where(f => f.FacilityId == id).Include( f=>f.Reservations).Include(f=>f.Owner).FirstOrDefaultAsync();
-            if(fac == null)
+            var fac = await context.Facilities.Where(f => f.FacilityId == id).Include(f => f.Reservations).Include(f => f.AccessPeriods).FirstOrDefaultAsync();
+            if (fac == null)
             {
-                return NotFound();
+                return NotFound("Facility not found");
             }
 
-            var reservations = fac.Reservations.ToList().Where(r => r.Status == ReservationStatus.Booked).ToList();
+            // Get future reservations
+            var booked = fac.Reservations.Where(r => r.EndTime > DateTime.Now && (r.Status == ReservationStatus.Booked)).ToList();
+            var inactive = fac.Reservations.Where(r => r.EndTime > DateTime.Now && (r.Status == ReservationStatus.Inactive || r.Status == ReservationStatus.CancelledByOwner)).ToList();
 
-            return reservations;
+            //Generate future dates and delete already booked or inactive
+            var availableDates = new List<Reservation>();
+            foreach (AccessPeriod ap in fac.AccessPeriods)
+            {
+                var res = ReservationsHelper.GetEmptyIfAvailable(ap, booked, inactive);
+
+                if (res != null)
+                {
+                    res.Facility = fac;
+                    availableDates.Add(res);
+                }
+            }
+
+            return availableDates;
         }
 
-        // GET: api/Reservation/New/Get/{id}
+        // GET: api/Reservation/Facility/{id}/Upcoming/Booked
         /// <summary>
         /// Returns future reservations of facility. FacilityID given in url {id}
         /// </summary>
-        [HttpGet("New/Get/{id}")]
+        [HttpGet("Facility/{id}/Upcoming/Booked")]
         public async Task<ActionResult<IEnumerable<Reservation>>> GetFutureReservationsOfFacility(int id)
         {
             var fac = await context.Facilities.Where(f => f.FacilityId == id).Include(f => f.Reservations).Include(f => f.Owner).FirstOrDefaultAsync();
@@ -65,11 +81,45 @@ namespace BookNadPlay_API.Controllers
             return reservations;
         }
 
-        // GET: api/Reservation/Archived/Get/{id}
+        //7 days period
+        // GET: api/Reservation/Facility/{id}/Upcoming
+        /// <summary>
+        /// Returns available (not booked) hours of facility in next 7 days period and also booked ones. FacilityID given in url {id}
+        /// </summary>
+        [HttpGet("Facility/{id}/Upcoming")]
+        public async Task<ActionResult<IEnumerable<Reservation>>> GetAllTerms(int id)
+        {
+            var fac = await context.Facilities.Where(f => f.FacilityId == id).Include(f => f.Reservations).Include(f => f.AccessPeriods).FirstOrDefaultAsync();
+            if (fac == null)
+            {
+                return NotFound();
+            }
+
+            // Get future reservations
+            var booked = fac.Reservations.Where(r => r.EndTime > DateTime.Now && (r.Status == ReservationStatus.Booked)).ToList();
+            var inactive = fac.Reservations.Where(r => r.EndTime > DateTime.Now && (r.Status == ReservationStatus.Inactive || r.Status == ReservationStatus.CancelledByOwner)).ToList();
+
+            //Generate future dates and delete already booked or inactive
+            var allDates = new List<Reservation>();
+            foreach (AccessPeriod ap in fac.AccessPeriods)
+            {
+                var res = ReservationsHelper.GetExistingOrEmpty(ap, booked, inactive);
+
+                if (res != null)
+                {
+                    res.Facility = fac;
+                    allDates.Add(res);
+                }
+            }
+            return allDates;
+
+        }
+
+        // GET: api/Reservation/Facility/{id}/Archived
         /// <summary>
         /// Returns archived reservations of facility. FacilityID given in url {id}
         /// </summary>
-        [HttpGet("Archived/Get/{id}")]
+        [HttpGet("Facility/{id}/Archived")]
         public async Task<ActionResult<IEnumerable<Reservation>>> GetArchivedReservationsOfFacility(int id)
         {
             var fac = await context.Facilities.Where(f => f.FacilityId == id).Include(f => f.Reservations).Include(f => f.Owner).FirstOrDefaultAsync();
@@ -78,45 +128,87 @@ namespace BookNadPlay_API.Controllers
                 return NotFound();
             }
 
-            var reservations = fac.Reservations.ToList().Where(r => r.Status == ReservationStatus.Booked && r.EndTime < DateTime.Now).ToList();
+            //Return past reservations
+            var reservations = fac.Reservations.ToList().Where(r => r.EndTime < DateTime.Now).ToList();
 
             return reservations;
         }
 
-        //7 days period
-        // GET: api/Reservation/Available/Get/{id}
+        //All reservations
+        // GET: api/Reservation/Booked/Facility/{id}
         /// <summary>
-        /// Returns available (not booked) hours of facility in next 7 days period. FacilityID given in url {id}
+        /// Returns all reservations of facility. FacilityID given in url {id}
         /// </summary>
-        [HttpGet("Available/Get/{id}")]
-        public async Task<ActionResult<IEnumerable<Reservation>>> GetAvailableTerms(int id)
+        [HttpGet("Facility/{id}")]
+        public async Task<ActionResult<IEnumerable<Reservation>>> GetReservationsOfFacility(int id)
         {
-            var fac = await context.Facilities.Where(f => f.FacilityId == id).Include(f => f.Reservations).Include(f => f.AccessPeriods).FirstOrDefaultAsync();
+            var fac = await context.Facilities.Where(f => f.FacilityId == id).Include( f=>f.Reservations).Include(f=>f.Owner).FirstOrDefaultAsync();
             if(fac == null)
             {
-                return NotFound("Facility not found");
+                return NotFound();
             }
 
-            // Get future reservations
-            var booked = fac.Reservations.Where(r => r.EndTime > DateTime.Now && (r.Status == ReservationStatus.Booked || r.Status == ReservationStatus.Cancelled)).ToList();
-            var inactive = fac.Reservations.Where(r => r.EndTime > DateTime.Now && (r.Status == ReservationStatus.Inactive)).ToList();
+            var reservations = fac.Reservations.ToList();
 
-            //Generate future dates and delete already booked or inactive
-            var availableDates = new List<Reservation>();
-            foreach(AccessPeriod ap in fac.AccessPeriods)
-            {
-                var res = ReservationsHelper.GetEmptyIfAvailable(ap, booked, inactive);
-
-                if (res != null)
-                {
-                    res.Facility = fac;
-                    availableDates.Add(res);
-                }
-            }
-            return availableDates;
-
+            return reservations;
         }
 
+        // GET: api/Reservation/User
+        /// <summary>
+        /// Returns reservations of user. UserID given in token
+        /// </summary>
+        [Authorize]
+        [HttpGet("User")]
+        public async Task<ActionResult<IEnumerable<Reservation>>> GetReservationsOfUser()
+        {
+            var user = await context.Users.Where(u => u.UserId == GetUserIdFromClaim(User)).Include(u => u.Reservations).FirstOrDefaultAsync();
+            if (user == null)
+            {
+                return Unauthorized("Incorrect user id");
+            }
+
+            var reservations = user.Reservations.ToList();
+
+            return reservations;
+        }
+
+        // GET: api/Reservation/User/Upcoming
+        /// <summary>
+        /// Returns upcoming reservations of user. UserID given in token
+        /// </summary>
+        [Authorize]
+        [HttpGet("User/Upcoming")]
+        public async Task<ActionResult<IEnumerable<Reservation>>> GetUpcomingReservationsOfUser()
+        {
+            var user = await context.Users.Where(u => u.UserId == GetUserIdFromClaim(User)).Include(u => u.Reservations).FirstOrDefaultAsync();
+            if (user == null)
+            {
+                return Unauthorized("Incorrect user id");
+            }
+
+            var reservations = user.Reservations.Where(r => r.EndTime > DateTime.Now).ToList();
+
+            return reservations;
+        }
+
+        // GET: api/Reservation/User/Upcoming
+        /// <summary>
+        /// Returns archived reservations of user. UserID given in token
+        /// </summary>
+        [Authorize]
+        [HttpGet("User/Archived")]
+        public async Task<ActionResult<IEnumerable<Reservation>>> GetArchivedReservationsOfUser()
+        {
+            var user = await context.Users.Where(u => u.UserId == GetUserIdFromClaim(User)).Include(u => u.Reservations).FirstOrDefaultAsync();
+            if (user == null)
+            {
+                return Unauthorized("Incorrect user id");
+            }
+
+            var reservations = user.Reservations.Where(r => r.EndTime < DateTime.Now).ToList();
+
+            return reservations;
+        }
 
         // GET: api/Reservation/5
         /// <summary>
@@ -135,43 +227,6 @@ namespace BookNadPlay_API.Controllers
             return reservation;
         }
 
-
-        //7 days period
-        // GET: api/Reservation/GetAll/GetAll/{id}
-        /// <summary>
-        /// Returns available (not booked) hours of facility in next 7 days period and also booked ones. FacilityID given in url {id}
-        /// </summary>
-        [HttpGet("GetAll/{id}")]
-        public async Task<ActionResult<IEnumerable<Reservation>>> GetAllTerms(int id)
-        {
-            var fac = await context.Facilities.Where(f => f.FacilityId == id).Include(f => f.Reservations).Include(f => f.AccessPeriods).FirstOrDefaultAsync();
-            if (fac == null)
-            {
-                return NotFound();
-            }
-
-            // Get future reservations
-            var booked = fac.Reservations.Where(r => r.EndTime > DateTime.Now && (r.Status == ReservationStatus.Booked || r.Status == ReservationStatus.Cancelled)).ToList();
-            var inactive = fac.Reservations.Where(r => r.EndTime > DateTime.Now && (r.Status == ReservationStatus.Inactive)).ToList();
-
-            //Generate future dates and delete already booked or inactive
-            var allDates = new List<Reservation>();
-            foreach (AccessPeriod ap in fac.AccessPeriods)
-            {
-                var res = ReservationsHelper.GetExistingOrEmpty(ap, booked, inactive);
-
-                if (res != null)
-                {
-                    res.Facility = fac;
-                    allDates.Add(res);
-                }
-                    
-            }
-
-
-            return allDates;
-
-        }
 
 
         // POST: api/Reservation/Add
@@ -353,7 +408,7 @@ namespace BookNadPlay_API.Controllers
             }
 
             // Change status to Cancelled
-            reservation.Status = ReservationStatus.Cancelled;
+            reservation.Status = ReservationStatus.CancelledByUser;
             await context.SaveChangesAsync();
 
             return reservation;
@@ -361,7 +416,7 @@ namespace BookNadPlay_API.Controllers
 
         // DELETE: api/Reservation/Cancel/5
         [Authorize]
-        [HttpDelete("/cancel/{id}")]
+        [HttpDelete("Cancel/{id}")]
         public async Task<ActionResult<Reservation>> CancelReservation(int id)
         {
             var user = await context.Users.FirstOrDefaultAsync(u => u.UserId == GetUserIdFromClaim(User));
@@ -382,7 +437,7 @@ namespace BookNadPlay_API.Controllers
             }
 
             // Change status to Cancelled
-            reservation.Status = ReservationStatus.Cancelled;
+            reservation.Status = ReservationStatus.CancelledByUser;
             await context.SaveChangesAsync();
 
             return reservation;

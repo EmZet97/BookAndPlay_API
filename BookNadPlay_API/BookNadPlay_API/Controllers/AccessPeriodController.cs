@@ -236,7 +236,7 @@ namespace BookNadPlay_API.Controllers
 
             foreach (var res in resToCancel)
             {
-                res.Status = ReservationStatus.Cancelled;
+                res.Status = ReservationStatus.CancelledByOwner;
             }
 
             foreach (var ap in apToDelete)

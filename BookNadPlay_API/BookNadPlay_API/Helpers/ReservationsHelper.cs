@@ -80,7 +80,8 @@ namespace BookAndPlay_API.Helpers
                 StartTime = startTime,
                 EndTime = endTime,
                 Status = ReservationStatus.NotBooked,
-                AccessPeriodId = accessPeriod.AccessPeriodId
+                AccessPeriodId = accessPeriod.AccessPeriodId,
+                
             };
 
         }

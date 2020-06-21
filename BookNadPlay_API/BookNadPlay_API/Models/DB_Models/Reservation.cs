@@ -9,7 +9,7 @@ namespace BookAndPlay_API.Models
 {
     public enum ReservationStatus
     {
-        NotBooked = 0, Booked = 1, Cancelled = 2, Inactive = 3
+        NotBooked = 0, Booked = 1, CancelledByOwner = 2, Inactive = 3, CancelledByUser = 4
     }
 
     public class Reservation
@@ -27,6 +27,13 @@ namespace BookAndPlay_API.Models
         public int? AccessPeriodId { get; set; }
 
         public ReservationStatus Status { get; set; } = ReservationStatus.NotBooked;
+
+        [NotMapped]
+        public bool Archives { 
+            get {
+                return EndTime < DateTime.Now;
+            }
+        }
 
         public virtual User User { get; set; }
 

@@ -74,3 +74,5 @@ _[Ss]cripts
 *.ncrunchsolution
 *.dot[Cc]over
 BookNadPlay_API/BookNadPlay_API/appsettings.json
+BookNadPlay_API/BookNadPlay_API/Properties/PublishProfiles/SiteForNow.pubxml
+BookNadPlay_API/.vs/BookAndPlay_API/DesignTimeBuild/.dtbcache.v2

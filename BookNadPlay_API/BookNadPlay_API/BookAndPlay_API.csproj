@@ -46,10 +46,8 @@
   <ItemGroup>
     <Folder Include="PublicFiles\Images\User001\" />
     <Folder Include="PublicFiles\Images\Facilities\" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <None Include="wwwroot\wyder.jpg" />
+    <Folder Include="wwwroot\Images\" />
+    <Folder Include="wwwroot\Avatars\" />
   </ItemGroup>
 
 

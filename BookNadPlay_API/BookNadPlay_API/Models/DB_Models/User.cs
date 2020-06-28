@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
@@ -50,6 +51,16 @@ namespace BookAndPlay_API.Models
 
         [DataType(DataType.PhoneNumber)]
         public string PhoneNumber { get; set; }
+
+        [NotMapped]
+        public string Avatar
+        {
+            get
+            {
+                char[] charsToTrim = { '*', ' ', '\'', ' ' };
+                return "Files/Avatars/" + Name.ToLower().Trim(charsToTrim)[0] + ".png";
+            }
+        }
 
         public int RoleId { get; set; }
         public string RoleName { get; set; }
